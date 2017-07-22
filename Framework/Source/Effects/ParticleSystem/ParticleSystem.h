@@ -181,6 +181,13 @@ namespace Falcor
             Vao::SharedPtr pVao;
         } mDrawResources;
 
+        struct
+        {
+            ProgramVars::BindLocation simulateCB;
+            ProgramVars::BindLocation drawCB;
+            ProgramVars::BindLocation emitCB;
+        } mBindLocations;
+
         uint32_t mMaxParticles;
         uint32_t mMaxEmitPerFrame;
         uint32_t mSimulateThreads;

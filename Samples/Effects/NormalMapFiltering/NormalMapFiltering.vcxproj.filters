@@ -15,5 +15,8 @@
     <None Include="Data\NormalMapFiltering.ps.hlsl">
       <Filter>Data</Filter>
     </None>
+    <None Include="Data\NormalMapFiltering.ps.glsl">
+      <Filter>Data</Filter>
+    </None>
   </ItemGroup>
 </Project>

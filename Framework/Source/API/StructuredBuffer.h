@@ -103,7 +103,7 @@ namespace Falcor
             \param[out] value The value read from the buffer
         */
         template<typename T>
-        void getVariable(const std::string& name, size_t elementIndex, T& value) const;
+        void getVariable(const std::string& name, size_t elementIndex, T& value);
 
         /** Read an array of variables from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -112,7 +112,7 @@ namespace Falcor
             \param[out] value Pointer to an array of values to read into
         */
         template<typename T>
-        void getVariableArray(size_t offset, size_t count, size_t elementIndex, T value[]) const;
+        void getVariableArray(size_t offset, size_t count, size_t elementIndex, T value[]);
 
         /** Read a variable from the buffer.
         The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -120,7 +120,7 @@ namespace Falcor
         \param[out] value The value read from the buffer
         */
         template<typename T>
-        void getVariable(size_t offset, size_t elementIndex, T& value) const;
+        void getVariable(size_t offset, size_t elementIndex, T& value);
 
         /** Read an array of variables from the buffer.
             The function will validate that the value Type matches the declaration in the shader. If there's a mismatch, an error will be logged and the call will be ignored.
@@ -129,7 +129,7 @@ namespace Falcor
             \param[out] value Pointer to an array of values to read into
         */
         template<typename T>
-        void getVariableArray(const std::string& name, size_t count, size_t elementIndex, T value[]) const;
+        void getVariableArray(const std::string& name, size_t count, size_t elementIndex, T value[]);
 
         /** Read a block of data from the buffer.\n
             If Offset + Size will result in buffer overflow, the call will be ignored and log an error.
@@ -137,14 +137,14 @@ namespace Falcor
             \param offset Byte offset to start reading from the buffer
             \param size Number of bytes to read from the buffer
         */
-        void readBlob(void* pDst, size_t offset, size_t size) const;
+        void readBlob(void* pDst, size_t offset, size_t size);
 
         /** Read the buffer data from the GPU.\n
             Note that it is possible to use this function to update only part of the CPU copy of the buffer. This might lead to inconsistencies between the GPU and CPU buffer, so make sure you know what you are doing.
             \param[in] offset Offset into the buffer to read from
             \param[in] size   Number of bytes to read. If this value is -1, will update the [Offset, EndOfBuffer] range.
         */
-        void readFromGPU(size_t offset = 0, size_t size = -1) const;
+        void readFromGPU(size_t offset = 0, size_t size = -1);
 
         /** Set the GPUCopyDirty flag
         */

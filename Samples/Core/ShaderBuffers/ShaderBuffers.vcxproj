@@ -22,7 +22,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Data\ShaderBuffers.cs.glsl" />
+    <None Include="Data\ShaderBuffers.ps.glsl" />
     <None Include="Data\ShaderBuffers.ps.hlsl" />
+    <None Include="Data\ShaderBuffers.vs.glsl" />
     <None Include="Data\ShaderBuffers.vs.hlsl" />
   </ItemGroup>
   <ItemGroup>

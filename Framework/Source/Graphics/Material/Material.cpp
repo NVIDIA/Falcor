@@ -330,10 +330,6 @@ namespace Falcor
 
         pCB->setBlob(&mData, offset, dataSize);
 
-#ifdef FALCOR_GL
-#pragma error Fix material texture bindings for OpenGL
-#endif
-
         // Now set the textures
         std::string resourceName = std::string(varName) + ".textures.layers";
         const auto pResourceDesc = pVars->getReflection()->getResourceDesc(resourceName);
@@ -343,13 +339,27 @@ namespace Falcor
             return;
         }
 
+        // Bind the layers (they are an array)
         auto pTextures = (Texture::SharedPtr*)&mData.textures;
-
-        for (uint32_t i = 0; i < kTexCount; i++)
+        for (uint32_t i = 0; i < MatMaxLayers; i++)
         {
             if (pTextures[i] != nullptr)
             {
-                pVars->setSrv(pResourceDesc->regIndex + i, pTextures[i]->getSRV());
+                pVars->setSrv(pResourceDesc->regSpace, pResourceDesc->regIndex, i, pTextures[i]->getSRV());
+            }
+        }
+
+        // Bind the rest
+        for (uint32_t i = MatMaxLayers; i < kTexCount; i++)
+        {
+            if (pTextures[i] != nullptr)
+            {
+#ifdef FALCOR_VK
+                uint32_t bindIndex = pResourceDesc->regIndex + 1 + i - MatMaxLayers;
+#else
+                uint32_t bindIndex = pResourceDesc->regIndex + i;
+#endif
+                pVars->setSrv(pResourceDesc->regSpace, bindIndex, 0, pTextures[i]->getSRV());
             }
         }
 
@@ -359,18 +369,6 @@ namespace Falcor
     bool Material::operator==(const Material& other) const
     {
         return memcmp(&mData, &other.mData, sizeof(mData)) == 0 && mData.samplerState == other.mData.samplerState;
-    }
-
-    void Material::evictTextures() const
-    {
-        Texture::SharedPtr* pTextures = (Texture::SharedPtr*)&mData.textures;
-        for(uint32_t i = 0; i < kTexCount ; i++)
-        {
-            if(pTextures[i])
-            {
-                pTextures[i]->evict(mData.samplerState.get());
-            }
-        }
     }
 
     void Material::setLayerTexture(uint32_t layerId, const Texture::SharedPtr& pTexture)

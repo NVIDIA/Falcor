@@ -23,17 +23,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\FeatureDemo.ps.hlsl">
+    <None Include="Data\FeatureDemo.ps.slang">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Data\FeatureDemoCommon.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\FeatureDemo.vs.slang">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\FeatureDemo.vs.hlsl">
-      <FileType>Document</FileType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Data\ApplyAO.ps.hlsl">
+    <None Include="Data\ApplyAO.ps.slang">
       <FileType>Document</FileType>
     </None>
   </ItemGroup>

@@ -35,10 +35,66 @@
 
 namespace Falcor
 {
-    RenderContext::SharedPtr RenderContext::create()
+    struct BlitData
+    {
+        FullScreenPass::UniquePtr pPass;
+        GraphicsVars::SharedPtr pVars;
+        GraphicsState::SharedPtr pState;
+
+        Sampler::SharedPtr pLinearSampler;
+        Sampler::SharedPtr pPointSampler;
+
+        ConstantBuffer::SharedPtr pSrcRectBuffer;
+        vec2 prevSrcRectOffset;
+        vec2 prevSrcReftScale;
+
+        // Variable offsets in constant buffer
+        size_t offsetVarOffset;
+        size_t scaleVarOffset;
+    };
+
+    static BlitData gBlitData;
+    static void initBlitData()
+    {
+        if (gBlitData.pVars == nullptr)
+        {
+            gBlitData.pPass = FullScreenPass::create("Framework/Shaders/Blit.vs.slang", "Framework/Shaders/Blit.ps.slang");
+            gBlitData.pVars = GraphicsVars::create(gBlitData.pPass->getProgram()->getActiveVersion()->getReflector());
+            gBlitData.pState = GraphicsState::create();
+
+            gBlitData.pSrcRectBuffer = gBlitData.pVars->getConstantBuffer("SrcRectCB");
+            gBlitData.offsetVarOffset = (uint32_t)gBlitData.pSrcRectBuffer->getVariableOffset("gOffset");
+            gBlitData.scaleVarOffset = (uint32_t)gBlitData.pSrcRectBuffer->getVariableOffset("gScale");
+            gBlitData.prevSrcRectOffset = vec2(-1.0f);
+            gBlitData.prevSrcReftScale = vec2(-1.0f);
+
+            Sampler::Desc desc;
+            desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+            gBlitData.pLinearSampler = Sampler::create(desc);
+            desc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+            gBlitData.pPointSampler = Sampler::create(desc);
+            assert(gBlitData.pPass->getProgram()->getActiveVersion()->getReflector()->getResourceDesc("gTex")->regIndex == 0);
+        }
+    }
+
+    void releaseBlitData()
+    {
+        gBlitData.pSrcRectBuffer = nullptr;
+        gBlitData.pVars = nullptr;
+        gBlitData.pPass = nullptr;
+        gBlitData.pState = nullptr;
+    }
+
+    RenderContext::~RenderContext()
+    {
+        releaseBlitData();
+    }
+
+
+    RenderContext::SharedPtr RenderContext::create(CommandQueueHandle queue)
     {
         SharedPtr pCtx = SharedPtr(new RenderContext());
-        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandListType::Direct);
+        pCtx->mpLowLevelData = LowLevelContextData::create(LowLevelContextData::CommandQueueType::Direct, queue);
         if (pCtx->mpLowLevelData == nullptr)
         {
             return nullptr;
@@ -52,29 +108,6 @@ namespace Falcor
         return pCtx;
     }
     
-    void RenderContext::clearFbo(const Fbo* pFbo, const glm::vec4& color, float depth, uint8_t stencil, FboAttachmentType flags)
-	{
-        bool clearDepth = (flags & FboAttachmentType::Depth) != FboAttachmentType::None;
-        bool clearColor = (flags & FboAttachmentType::Color) != FboAttachmentType::None;
-        bool clearStencil = (flags & FboAttachmentType::Stencil) != FboAttachmentType::None;
-
-        if(clearColor)
-        {
-            for(uint32_t i = 0 ; i < Fbo::getMaxColorTargetCount() ; i++)
-            {
-                if(pFbo->getColorTexture(i))
-                {
-                    clearRtv(pFbo->getRenderTargetView(i).get(), color);
-                }
-            }
-        }
-
-        if(clearDepth | clearStencil)
-        {
-            clearDsv(pFbo->getDepthStencilView().get(), depth, stencil, clearDepth, clearStencil);
-        }
-	}
-
     void RenderContext::clearRtv(const RenderTargetView* pRtv, const glm::vec4& color)
     {
         resourceBarrier(pRtv->getResource(), Resource::State::RenderTarget);
@@ -185,25 +218,28 @@ namespace Falcor
     void RenderContext::prepareForDraw()
     {
         assert(mpGraphicsState);
-#if _ENABLE_NVAPI
-        if(mpGraphicsState->isSinglePassStereoEnabled())
-        {
-            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
-            assert(ret == NVAPI_OK);
-    }
-#else
-        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
-#endif
-        // Bind the root signature and the root signature data
+
+        // Apply the vars. Must be first because applyGraphicsVars() might cause a flush
         if (mpGraphicsVars)
         {
-            mpGraphicsVars->apply(const_cast<RenderContext*>(this), mBindComputeRootSig);
+            applyGraphicsVars();
         }
         else
         {
             mpLowLevelData->getCommandList()->SetGraphicsRootSignature(RootSignature::getEmpty()->getApiHandle());
         }
-        mBindComputeRootSig = false;
+
+#if _ENABLE_NVAPI
+        if (mpGraphicsState->isSinglePassStereoEnabled())
+        {
+            NvAPI_Status ret = NvAPI_D3D12_SetSinglePassStereoMode(mpLowLevelData->getCommandList(), 2, 1, false);
+            assert(ret == NVAPI_OK);
+        }
+#else
+        assert(mpGraphicsState->isSinglePassStereoEnabled() == false);
+#endif
+
+        mBindGraphicsRootSig = false;
 
         CommandListHandle pList = mpLowLevelData->getCommandList();
         pList->IASetPrimitiveTopology(getD3DPrimitiveTopology(mpGraphicsState->getVao()->getPrimitiveTopology()));
@@ -235,13 +271,13 @@ namespace Falcor
         drawInstanced(vertexCount, 1, startVertexLocation, 0);
     }
 
-    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int baseVertexLocation, uint32_t startInstanceLocation)
+    void RenderContext::drawIndexedInstanced(uint32_t indexCount, uint32_t instanceCount, uint32_t startIndexLocation, int32_t baseVertexLocation, uint32_t startInstanceLocation)
     {
         prepareForDraw();
         mpLowLevelData->getCommandList()->DrawIndexedInstanced(indexCount, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
     }
 
-    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int baseVertexLocation)
+    void RenderContext::drawIndexed(uint32_t indexCount, uint32_t startIndexLocation, int32_t baseVertexLocation)
     {
         drawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
     }
@@ -281,12 +317,83 @@ namespace Falcor
         gpDevice->getApiHandle()->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&spDrawIndexCommandSig));
     }
 
-    void RenderContext::reset()
+    void RenderContext::blit(ShaderResourceView::SharedPtr pSrc, RenderTargetView::SharedPtr pDst, const uvec4& srcRect, const uvec4& dstRect, Sampler::Filter filter)
     {
-        ComputeContext::reset();
-        mBindComputeRootSig = true;
-    }
+        initBlitData(); // This has to be here and can't be in the constructor. FullScreenPass will allocate some buffers which depends on the ResourceAllocator which depends on the fence inside the RenderContext. Dependencies are fun!
+        if (filter == Sampler::Filter::Linear)
+        {
+            gBlitData.pVars->setSampler(0, 0, 0, gBlitData.pLinearSampler);
+        }
+        else
+        {
+            gBlitData.pVars->setSampler(0, 0, 0, gBlitData.pPointSampler);
+        }
 
-    void RenderContext::applyProgramVars() {}
-    void RenderContext::applyGraphicsState() {}
+        assert(pSrc->getViewInfo().arraySize == 1 && pSrc->getViewInfo().mipCount == 1);
+        assert(pDst->getViewInfo().arraySize == 1 && pDst->getViewInfo().mipCount == 1);
+
+        const Texture* pSrcTexture = dynamic_cast<const Texture*>(pSrc->getResource());
+        const Texture* pDstTexture = dynamic_cast<const Texture*>(pDst->getResource());
+        assert(pSrcTexture != nullptr && pDstTexture != nullptr);
+
+        vec2 srcRectOffset(0.0f);
+        vec2 srcRectScale(1.0f);
+        uint32_t srcMipLevel = pSrc->getViewInfo().mostDetailedMip;
+        uint32_t dstMipLevel = pDst->getViewInfo().mostDetailedMip;
+        GraphicsState::Viewport dstViewport(0.0f, 0.0f, (float)pDstTexture->getWidth(dstMipLevel), (float)pDstTexture->getHeight(dstMipLevel), 0.0f, 1.0f);
+
+        // If src rect specified
+        if (srcRect.x != (uint32_t)-1)
+        {
+            const vec2 srcSize(pSrcTexture->getWidth(srcMipLevel), pSrcTexture->getHeight(srcMipLevel));
+            srcRectOffset = vec2(srcRect.x, srcRect.y) / srcSize;
+            srcRectScale = vec2(srcRect.z - srcRect.x, srcRect.w - srcRect.y) / srcSize;
+        }
+
+        // If dest rect specified
+        if (dstRect.x != (uint32_t)-1)
+        {
+            dstViewport = GraphicsState::Viewport((float)dstRect.x, (float)dstRect.y, (float)(dstRect.z - dstRect.x), (float)(dstRect.w - dstRect.y), 0.0f, 1.0f);
+        }
+
+        // Update buffer/state
+        if (srcRectOffset != gBlitData.prevSrcRectOffset)
+        {
+            gBlitData.pSrcRectBuffer->setVariable(gBlitData.offsetVarOffset, srcRectOffset);
+            gBlitData.prevSrcRectOffset = srcRectOffset;
+        }
+
+        if (srcRectScale != gBlitData.prevSrcReftScale)
+        {
+            gBlitData.pSrcRectBuffer->setVariable(gBlitData.scaleVarOffset, srcRectScale);
+            gBlitData.prevSrcReftScale = srcRectScale;
+        }
+
+        gBlitData.pState->setViewport(0, dstViewport);
+
+        pushGraphicsState(gBlitData.pState);
+        pushGraphicsVars(gBlitData.pVars);
+
+        if (pSrcTexture->getSampleCount() > 1)
+        {
+            gBlitData.pPass->getProgram()->addDefine("SAMPLE_COUNT", std::to_string(pSrcTexture->getSampleCount()));
+        }
+        else
+        {
+            gBlitData.pPass->getProgram()->removeDefine("SAMPLE_COUNT");
+        }
+
+        Fbo::SharedPtr pFbo = Fbo::create();
+        Texture::SharedPtr pSharedTex = std::const_pointer_cast<Texture>(pDstTexture->shared_from_this());
+        pFbo->attachColorTarget(pSharedTex, 0, pDst->getViewInfo().mostDetailedMip, pDst->getViewInfo().firstArraySlice, pDst->getViewInfo().arraySize);
+        gBlitData.pState->pushFbo(pFbo, false);
+        gBlitData.pVars->setSrv(0, 0, 0, pSrc);
+        gBlitData.pPass->execute(this);
+
+        // Release the resources we bound
+        gBlitData.pVars->setSrv(0, 0, 0, nullptr);
+        gBlitData.pState->popFbo(false);
+        popGraphicsState();
+        popGraphicsVars();
+    }
 }

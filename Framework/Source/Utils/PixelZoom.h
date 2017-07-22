@@ -36,12 +36,9 @@ namespace Falcor
     public:
         using SharedPtr = std::shared_ptr<PixelZoom>;
 
-        static SharedPtr PixelZoom::create();
-        /**
-            Create Blit fbos
-            \param backbuffer a ptr to the swap chain fbo
+        /** Create a new object
         */
-        void init(Fbo* backBuffer);
+        static SharedPtr PixelZoom::create(const Fbo* pBackbuffer);
 
         /**
             Does zoom operation if mShouldZoom is true (if ctrl+alt pressed this frame)
@@ -54,16 +51,19 @@ namespace Falcor
             Stores data about mouse needed for zooming
             \param me the mouse event
         */
-        void onMouseEvent(const MouseEvent& me);
+        bool onMouseEvent(const MouseEvent& me);
 
         /**
             Checks if it should zoom
             \param keyboard event
         */
-        void onKeyboardEvent(const KeyboardEvent& ke);
+        bool onKeyboardEvent(const KeyboardEvent& ke);
+
+        /** Handle resize events
+        */
+        void onResizeSwapChain(const Fbo* pBackbuffer);
 
     private:
-        void clampToEdge(vec2& pix, uint32_t width, uint32_t height, uint32_t offset);
         int32_t mSrcZoomSize = 5;
         const uint32_t mDstZoomSize = 200;
         const uint32_t mZoomCoefficient = 4;

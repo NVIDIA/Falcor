@@ -47,7 +47,7 @@ void PostProcess::onLoad()
     mCameraController.setModelParams(mpTeapot->getCenter(), mpTeapot->getRadius(), 2.0f);    
     
     //Program
-    mpMainProg = GraphicsProgram::createFromFile("PostProcess.vs.hlsl", "Postprocess.ps.hlsl");
+    mpMainProg = GraphicsProgram::createFromFile(appendShaderExtension("PostProcess.vs"), appendShaderExtension("Postprocess.ps"));
     mpProgramVars = GraphicsVars::create(mpMainProg->getActiveVersion()->getReflector());
     mpGraphicsState = GraphicsState::create();
     mpGraphicsState->setFbo(mpDefaultFBO);
@@ -56,7 +56,7 @@ void PostProcess::onLoad()
     Sampler::Desc samplerDesc;
     samplerDesc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
     mpTriLinearSampler = Sampler::create(samplerDesc);
-    mpProgramVars->setSampler(0, mpTriLinearSampler);
+    mpProgramVars->setSampler("gSampler", mpTriLinearSampler);
 
     mpToneMapper = ToneMapping::create(ToneMapping::Operator::HableUc2);
     mpToneMapper->setExposureKey(0.104f);
@@ -210,7 +210,6 @@ void PostProcess::onEndTestFrame()
             //Next operator
             ++mToneMapOperatorIndex;
         }
-
         mpToneMapper->setOperator(static_cast<ToneMapping::Operator>(mToneMapOperatorIndex));
     }
 }

@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "ProjectTemplate.h"
-#include "API/D3D/FalcorD3D.h"
 
 void ProjectTemplate::onGuiRender()
 {

@@ -38,8 +38,11 @@ struct DefaultLayoutRulesImpl : SimpleLayoutRulesImpl
         case BaseType::Bool:
             return SimpleLayoutInfo( LayoutResourceKind::Uniform, 4, 4 );
 
+        case BaseType::Double:
+            return SimpleLayoutInfo( LayoutResourceKind::Uniform, 8, 8 );
+
         default:
-            assert(!"unimplemented");
+            SLANG_UNEXPECTED("uhandled scalar type");
             return SimpleLayoutInfo( LayoutResourceKind::Uniform, 0, 1 );
         }
     }
@@ -64,7 +67,7 @@ struct DefaultLayoutRulesImpl : SimpleLayoutRulesImpl
         case slang::TypeReflection::ScalarType::Float64:    return SimpleLayoutInfo( LayoutResourceKind::Uniform, 8,8);
 
         default:
-            assert(!"unimplemented");
+            SLANG_UNEXPECTED("unhandled scalar type");
             return SimpleLayoutInfo();
         }
     }
@@ -155,19 +158,32 @@ struct GLSLConstantBufferLayoutRulesImpl : DefaultConstantBufferLayoutRulesImpl
 {
 };
 
+// The `std140` and `std430` rules require vectors to be aligned to the next power of
+// two up from their size (so a `float2` is 8-byte aligned, and a `float3` is
+// 16-byte aligned).
+//
+// Note that in this case we have a type layout where the size is *not* a multiple
+// of the alignment, so it should be possible to pack a scalar after a `float3`.
+static SimpleLayoutInfo getGLSLVectorLayout(
+    SimpleLayoutInfo elementInfo, size_t elementCount)
+{
+    SLANG_RELEASE_ASSERT(elementInfo.kind == LayoutResourceKind::Uniform);
+    auto size = elementInfo.size * elementCount;
+    SimpleLayoutInfo vectorInfo(
+        LayoutResourceKind::Uniform,
+        size,
+        RoundUpToPowerOfTwo(size));
+    return vectorInfo;
+}
+
+// The `std140` rules combine the GLSL-specific layout for 3-vectors with the
+// alignment padding for structures and arrays that is common to both HLSL
+// and GLSL constant buffers.
 struct Std140LayoutRulesImpl : GLSLConstantBufferLayoutRulesImpl
 {
-    // The `std140` rules require vectors to be aligned to the next power of two
-    // up from their size (so a `float2` is 8-byte aligned, and a `float3` is
-    // 16-byte aligned).
     SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
     {
-        assert(elementInfo.kind == LayoutResourceKind::Uniform);
-        SimpleLayoutInfo vectorInfo(
-            LayoutResourceKind::Uniform,
-            elementInfo.size * elementCount,
-            RoundUpToPowerOfTwo(elementInfo.size * elementInfo.alignment));
-        return vectorInfo;
+        return getGLSLVectorLayout(elementInfo, elementCount);
     }
 };
 
@@ -206,8 +222,15 @@ struct HLSLStructuredBufferLayoutRulesImpl : DefaultLayoutRulesImpl
     // TODO: customize these to be correct...
 };
 
-struct Std430LayoutRulesImpl : GLSLConstantBufferLayoutRulesImpl
+// The `std430` rules don't include the array/structure alignment padding that
+// gets applied to constant buffers, but they do include the padding of 3-vectors
+// to be aligned as 4-vectors.
+struct Std430LayoutRulesImpl : DefaultLayoutRulesImpl
 {
+    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
+    {
+        return getGLSLVectorLayout(elementInfo, elementCount);
+    }
 };
 
 struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
@@ -225,7 +248,7 @@ struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
         return kind;
     }
 
-    SimpleLayoutInfo GetScalarLayout(BaseType baseType) override
+    SimpleLayoutInfo GetScalarLayout(BaseType) override
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -233,7 +256,7 @@ struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType scalarType)
+    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType)
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -241,7 +264,7 @@ struct DefaultVaryingLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
+    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo, size_t) override
     {
         // Vectors take up one slot by default
         //
@@ -276,7 +299,7 @@ struct GLSLSpecializationConstantLayoutRulesImpl : DefaultLayoutRulesImpl
         return LayoutResourceKind::SpecializationConstant;
     }
 
-    SimpleLayoutInfo GetScalarLayout(BaseType baseType) override
+    SimpleLayoutInfo GetScalarLayout(BaseType) override
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -284,7 +307,7 @@ struct GLSLSpecializationConstantLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType scalarType)
+    virtual SimpleLayoutInfo GetScalarLayout(slang::TypeReflection::ScalarType)
     {
         // Assume that all scalars take up one "slot"
         return SimpleLayoutInfo(
@@ -292,7 +315,7 @@ struct GLSLSpecializationConstantLayoutRulesImpl : DefaultLayoutRulesImpl
             1);
     }
 
-    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo elementInfo, size_t elementCount) override
+    SimpleLayoutInfo GetVectorLayout(SimpleLayoutInfo, size_t elementCount) override
     {
         // GLSL doesn't support vectors of specialization constants,
         // but we will assume that, if supported, they would use one slot per element.
@@ -308,7 +331,7 @@ GLSLSpecializationConstantLayoutRulesImpl kGLSLSpecializationConstantLayoutRules
 
 struct GLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
 {
-    virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind kind) override
+    virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind) override
     {
         // In Vulkan GLSL, pretty much every object is just a descriptor-table slot.
         // We can refine this method once we support a case where this isn't true.
@@ -316,6 +339,19 @@ struct GLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
     }
 };
 GLSLObjectLayoutRulesImpl kGLSLObjectLayoutRulesImpl;
+
+struct GLSLPushConstantBufferObjectLayoutRulesImpl : GLSLObjectLayoutRulesImpl
+{
+    virtual SimpleLayoutInfo GetObjectLayout(ShaderParameterKind kind) override
+    {
+        // Special-case the layout for a constant-buffer, because we don't
+        // want it to allocate a descriptor-table slot
+        return SimpleLayoutInfo(LayoutResourceKind::PushConstantBuffer, 1);
+
+        return GLSLObjectLayoutRulesImpl::GetObjectLayout(kind);
+    }
+};
+GLSLPushConstantBufferObjectLayoutRulesImpl kGLSLPushConstantBufferObjectLayoutRulesImpl_;
 
 struct HLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
 {
@@ -328,14 +364,12 @@ struct HLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
 
         case ShaderParameterKind::TextureUniformBuffer:
         case ShaderParameterKind::StructuredBuffer:
-        case ShaderParameterKind::SampledBuffer:
         case ShaderParameterKind::RawBuffer:
         case ShaderParameterKind::Buffer:
         case ShaderParameterKind::Texture:
             return SimpleLayoutInfo(LayoutResourceKind::ShaderResource, 1);
 
         case ShaderParameterKind::MutableStructuredBuffer:
-        case ShaderParameterKind::MutableSampledBuffer:
         case ShaderParameterKind::MutableRawBuffer:
         case ShaderParameterKind::MutableBuffer:
         case ShaderParameterKind::MutableTexture:
@@ -349,7 +383,7 @@ struct HLSLObjectLayoutRulesImpl : ObjectLayoutRulesImpl
         case ShaderParameterKind::InputRenderTarget:
             // TODO: how to handle these?
         default:
-            assert(!"unimplemented");
+            SLANG_UNEXPECTED("unhandled shader parameter kind");
             return SimpleLayoutInfo();
         }
     }
@@ -372,6 +406,7 @@ HLSLVaryingLayoutRulesImpl kHLSLVaryingOutputLayoutRulesImpl(LayoutResourceKind:
 struct GLSLLayoutRulesFamilyImpl : LayoutRulesFamilyImpl
 {
     virtual LayoutRulesImpl* getConstantBufferRules() override;
+    virtual LayoutRulesImpl* getPushConstantBufferRules() override;
     virtual LayoutRulesImpl* getTextureBufferRules() override;
     virtual LayoutRulesImpl* getVaryingInputRules() override;
     virtual LayoutRulesImpl* getVaryingOutputRules() override;
@@ -382,6 +417,7 @@ struct GLSLLayoutRulesFamilyImpl : LayoutRulesFamilyImpl
 struct HLSLLayoutRulesFamilyImpl : LayoutRulesFamilyImpl
 {
     virtual LayoutRulesImpl* getConstantBufferRules() override;
+    virtual LayoutRulesImpl* getPushConstantBufferRules() override;
     virtual LayoutRulesImpl* getTextureBufferRules() override;
     virtual LayoutRulesImpl* getVaryingInputRules() override;
     virtual LayoutRulesImpl* getVaryingOutputRules() override;
@@ -401,6 +437,10 @@ LayoutRulesImpl kStd140LayoutRulesImpl_ = {
 
 LayoutRulesImpl kStd430LayoutRulesImpl_ = {
     &kGLSLLayoutRulesFamilyImpl, &kStd430LayoutRulesImpl, &kGLSLObjectLayoutRulesImpl,
+};
+
+LayoutRulesImpl kGLSLPushConstantLayoutRulesImpl_ = {
+    &kGLSLLayoutRulesFamilyImpl, &kStd430LayoutRulesImpl, &kGLSLPushConstantBufferObjectLayoutRulesImpl_,
 };
 
 LayoutRulesImpl kGLSLVaryingInputLayoutRulesImpl_ = {
@@ -440,6 +480,11 @@ LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getConstantBufferRules()
     return &kStd140LayoutRulesImpl_;
 }
 
+LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getPushConstantBufferRules()
+{
+    return &kGLSLPushConstantLayoutRulesImpl_;
+}
+
 LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getTextureBufferRules()
 {
     return nullptr;
@@ -468,6 +513,11 @@ LayoutRulesImpl* GLSLLayoutRulesFamilyImpl::getShaderStorageBufferRules()
 //
 
 LayoutRulesImpl* HLSLLayoutRulesFamilyImpl::getConstantBufferRules()
+{
+    return &kHLSLConstantBufferLayoutRulesImpl_;
+}
+
+LayoutRulesImpl* HLSLLayoutRulesFamilyImpl::getPushConstantBufferRules()
 {
     return &kHLSLConstantBufferLayoutRulesImpl_;
 }
@@ -523,15 +573,18 @@ LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(LayoutRulesFamily rule)
     }
 }
 
-LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(SourceLanguage language)
+LayoutRulesFamilyImpl* GetLayoutRulesFamilyImpl(CodeGenTarget target)
 {
-    switch (language)
+    switch (target)
     {
-    case SourceLanguage::Slang:
-    case SourceLanguage::HLSL:
+    case CodeGenTarget::HLSL:
+    case CodeGenTarget::DXBytecode:
+    case CodeGenTarget::DXBytecodeAssembly:
         return &kHLSLLayoutRulesFamilyImpl;
 
-    case SourceLanguage::GLSL:
+    case CodeGenTarget::GLSL:
+    case CodeGenTarget::SPIRV:
+    case CodeGenTarget::SPIRVAssembly:
         return &kGLSLLayoutRulesFamilyImpl;
 
     default:
@@ -544,14 +597,14 @@ static int GetElementCount(RefPtr<IntVal> val)
 {
     if (auto constantVal = val.As<ConstantIntVal>())
     {
-        return constantVal->value;
+        return (int) constantVal->value;
     }
     else if( auto varRefVal = val.As<GenericParamIntVal>() )
     {
         // TODO(tfoley): do something sensible in this case
         return 0;
     }
-    assert(!"unexpected");
+    SLANG_UNEXPECTED("unhandled integer literal kind");
     return 0;
 }
 
@@ -620,7 +673,7 @@ static SimpleLayoutInfo getParameterBlockLayoutInfo(
     }
     else
     {
-        assert(!"unexpected");
+        SLANG_UNEXPECTED("unhandled parameter block type");
         return SimpleLayoutInfo();
     }
 }
@@ -629,17 +682,14 @@ static SimpleLayoutInfo getParameterBlockLayoutInfo(
 RefPtr<ParameterBlockTypeLayout>
 createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
-    RefPtr<TypeLayout>          elementTypeLayout,
-    LayoutRulesImpl*            rules)
+    LayoutRulesImpl*            parameterBlockRules,
+    SimpleLayoutInfo            parameterBlockInfo,
+    RefPtr<TypeLayout>          elementTypeLayout)
 {
-    auto info = getParameterBlockLayoutInfo(
-        parameterBlockType,
-        rules);
-
     auto typeLayout = new ParameterBlockTypeLayout();
 
     typeLayout->type = parameterBlockType;
-    typeLayout->rules = rules;
+    typeLayout->rules = parameterBlockRules;
 
     typeLayout->elementTypeLayout = elementTypeLayout;
 
@@ -648,9 +698,9 @@ createParameterBlockTypeLayout(
     // originally (which should be a single binding "slot"
     // and hence no uniform data).
     // 
-    typeLayout->uniformAlignment = info.alignment;
-    assert(!typeLayout->FindResourceInfo(LayoutResourceKind::Uniform));
-    assert(typeLayout->uniformAlignment == 1);
+    typeLayout->uniformAlignment = parameterBlockInfo.alignment;
+    SLANG_RELEASE_ASSERT(!typeLayout->FindResourceInfo(LayoutResourceKind::Uniform));
+    SLANG_RELEASE_ASSERT(typeLayout->uniformAlignment == 1);
 
     // TODO(tfoley): There is a subtle question here of whether
     // a constant buffer declaration that then contains zero
@@ -662,11 +712,11 @@ createParameterBlockTypeLayout(
 
     // Make sure that we allocate resource usage for the
     // parameter block itself.
-    if( info.size )
+    if( parameterBlockInfo.size )
     {
         typeLayout->addResourceUsage(
-            info.kind,
-            info.size);
+            parameterBlockInfo.kind,
+            parameterBlockInfo.size);
     }
 
     // Now, if the element type itself had any resources, then
@@ -684,6 +734,48 @@ createParameterBlockTypeLayout(
     }
 
     return typeLayout;
+}
+
+RefPtr<ParameterBlockTypeLayout>
+createParameterBlockTypeLayout(
+    RefPtr<ParameterBlockType>  parameterBlockType,
+    LayoutRulesImpl*            parameterBlockRules,
+    RefPtr<ExpressionType>      elementType,
+    LayoutRulesImpl*            elementTypeRules)
+{
+    // First compute resource usage of the block itself.
+    // For now we assume that the layout of the block can
+    // always be described in a `SimpleLayoutInfo` (only
+    // a single resource kind consumed).
+    SimpleLayoutInfo info;
+    if (parameterBlockType)
+    {
+        info = getParameterBlockLayoutInfo(
+            parameterBlockType,
+            parameterBlockRules);
+    }
+    else
+    {
+        // If there is no concrete type, then it seems like we are
+        // being asked to compute layout for the global scope
+        info = parameterBlockRules->GetObjectLayout(ShaderParameterKind::ConstantBuffer);
+    }
+
+    // Now compute a layout for the elements of the parameter block.
+    // Note that we need to be careful and deal with the case where
+    // the elements of the block use the same resource kind consumed
+    // by the block itself.
+
+    auto elementTypeLayout = CreateTypeLayout(
+        elementType,
+        elementTypeRules,
+        info);
+
+    return createParameterBlockTypeLayout(
+        parameterBlockType,
+        parameterBlockRules,
+        info,
+        elementTypeLayout);
 }
 
 LayoutRulesImpl* getParameterBufferElementTypeLayoutRules(
@@ -712,7 +804,7 @@ LayoutRulesImpl* getParameterBufferElementTypeLayoutRules(
     }
     else
     {
-        assert(!"unexpected");
+        SLANG_UNEXPECTED("uhandled parameter block type");
         return nullptr;
     }
 }
@@ -720,22 +812,20 @@ LayoutRulesImpl* getParameterBufferElementTypeLayoutRules(
 RefPtr<ParameterBlockTypeLayout>
 createParameterBlockTypeLayout(
     RefPtr<ParameterBlockType>  parameterBlockType,
-    LayoutRulesImpl*            rules)
+    LayoutRulesImpl*            parameterBlockRules)
 {
     // Determine the layout rules to use for the contents of the block
-    auto parameterBlockLayoutRules = getParameterBufferElementTypeLayoutRules(
+    auto elementTypeRules = getParameterBufferElementTypeLayoutRules(
         parameterBlockType,
-        rules);
+        parameterBlockRules);
 
-    // Create and save type layout for the buffer contents.
-    auto elementTypeLayout = CreateTypeLayout(
-        parameterBlockType->elementType.Ptr(),
-        parameterBlockLayoutRules);
+    auto elementType = parameterBlockType->elementType;
 
     return createParameterBlockTypeLayout(
         parameterBlockType,
-        elementTypeLayout,
-        rules);
+        parameterBlockRules,
+        elementType,
+        elementTypeRules);
 }
 
 // Create a type layout for a structured buffer type.
@@ -756,8 +846,8 @@ createStructuredBufferTypeLayout(
     typeLayout->elementTypeLayout = elementTypeLayout;
 
     typeLayout->uniformAlignment = info.alignment;
-    assert(!typeLayout->FindResourceInfo(LayoutResourceKind::Uniform));
-    assert(typeLayout->uniformAlignment == 1);
+    SLANG_RELEASE_ASSERT(!typeLayout->FindResourceInfo(LayoutResourceKind::Uniform));
+    SLANG_RELEASE_ASSERT(typeLayout->uniformAlignment == 1);
 
     if( info.size != 0 )
     {
@@ -800,7 +890,22 @@ createStructuredBufferTypeLayout(
 SimpleLayoutInfo GetLayoutImpl(
     ExpressionType*     type,
     LayoutRulesImpl*    rules,
+    RefPtr<TypeLayout>* outTypeLayout,
+    SimpleLayoutInfo    offset);
+
+SimpleLayoutInfo GetLayoutImpl(
+    ExpressionType*     type,
+    LayoutRulesImpl*    rules,
     RefPtr<TypeLayout>* outTypeLayout)
+{
+    return GetLayoutImpl(type, rules, outTypeLayout, SimpleLayoutInfo());
+}
+
+SimpleLayoutInfo GetLayoutImpl(
+    ExpressionType*     type,
+    LayoutRulesImpl*    rules,
+    RefPtr<TypeLayout>* outTypeLayout,
+    SimpleLayoutInfo    offset)
 {
     if (auto parameterBlockType = type->As<ParameterBlockType>())
     {
@@ -852,6 +957,28 @@ SimpleLayoutInfo GetLayoutImpl(
 
         case SLANG_RESOURCE_ACCESS_READ:
             kind = ShaderParameterKind::Texture;
+            break;
+        }
+
+        return GetSimpleLayoutImpl(
+            rules->GetObjectLayout(kind),
+            type,
+            rules,
+            outTypeLayout);
+    }
+    else if (auto imageType = type->As<GLSLImageType>())
+    {
+        // TODO: the logic here should really be defined by the rules,
+        // and not at this top level...
+        ShaderParameterKind kind;
+        switch( imageType->getAccess() )
+        {
+        default:
+            kind = ShaderParameterKind::MutableImage;
+            break;
+
+        case SLANG_RESOURCE_ACCESS_READ:
+            kind = ShaderParameterKind::Image;
             break;
         }
 
@@ -915,8 +1042,6 @@ SimpleLayoutInfo GetLayoutImpl(
             type, rules, outTypeLayout);                        \
     } while(0)
 
-    CASE(HLSLBufferType,                    SampledBuffer);
-    CASE(HLSLRWBufferType,                  MutableSampledBuffer);
     CASE(HLSLByteAddressBufferType,         RawBuffer);
     CASE(HLSLRWByteAddressBufferType,       MutableRawBuffer);
 
@@ -943,7 +1068,7 @@ SimpleLayoutInfo GetLayoutImpl(
         return GetSimpleLayoutImpl(
             rules->GetVectorLayout(
                 GetLayout(vecType->elementType.Ptr(), rules),
-                GetIntVal(vecType->elementCount)),
+                (size_t) GetIntVal(vecType->elementCount)),
             type,
             rules,
             outTypeLayout);
@@ -953,8 +1078,8 @@ SimpleLayoutInfo GetLayoutImpl(
         return GetSimpleLayoutImpl(
             rules->GetMatrixLayout(
                 GetLayout(matType->getElementType(), rules),
-                GetIntVal(matType->getRowCount()),
-                GetIntVal(matType->getColumnCount())),
+                (size_t) GetIntVal(matType->getRowCount()),
+                (size_t) GetIntVal(matType->getColumnCount())),
             type,
             rules,
             outTypeLayout);
@@ -997,10 +1122,30 @@ SimpleLayoutInfo GetLayoutImpl(
                 // The uniform case was already handled above
                 if( elementResourceInfo.kind == LayoutResourceKind::Uniform )
                     continue;
+
+                // In almost all cases, the resources consumed by an array
+                // will be its element count times the resources consumed
+                // by its element type. The one exception to this is
+                // arrays of resources in Vulkan GLSL, where an entire array
+                // only consumes a single descriptor-table slot.
+                //
+                // Note: We extend this logic to arbitrary arrays-of-structs,
+                // under the assumption that downstream legalization will
+                // turn those into scalarized structs-of-arrays and this
+                // logic will work out.
+                UInt arrayResourceCount = 0;
+                if (elementResourceInfo.kind == LayoutResourceKind::DescriptorTableSlot)
+                {
+                    arrayResourceCount = elementResourceInfo.count;
+                }
+                else
+                {
+                    arrayResourceCount = elementResourceInfo.count * elementCount;
+                }
             
                 typeLayout->addResourceUsage(
                     elementResourceInfo.kind,
-                    elementResourceInfo.count * elementCount);
+                    arrayResourceCount);
             }
         }
         return arrayUniformInfo;
@@ -1069,7 +1214,7 @@ SimpleLayoutInfo GetLayoutImpl(
                             continue;
 
                         // We should not have already processed this resource type
-                        assert(!fieldLayout->FindResourceInfo(fieldTypeResourceInfo.kind));
+                        SLANG_RELEASE_ASSERT(!fieldLayout->FindResourceInfo(fieldTypeResourceInfo.kind));
 
                         // The field will need offset information for this kind
                         auto fieldResourceInfo = fieldLayout->AddResourceInfo(fieldTypeResourceInfo.kind);
@@ -1078,6 +1223,15 @@ SimpleLayoutInfo GetLayoutImpl(
                         auto structTypeResourceInfo = typeLayout->findOrAddResourceInfo(fieldTypeResourceInfo.kind);
                         fieldResourceInfo->index = structTypeResourceInfo->count;
                         structTypeResourceInfo->count += fieldTypeResourceInfo.count;
+                    }
+
+                    // If the user passed in offset info, then apply it here
+                    if (offset.size)
+                    {
+                        if (auto fieldResInfo = fieldLayout->FindResourceInfo(offset.kind))
+                        {
+                            fieldResInfo->index += offset.size;
+                        }
                     }
                 }
             }
@@ -1092,9 +1246,22 @@ SimpleLayoutInfo GetLayoutImpl(
             return info;
         }
     }
+    else if (auto errorType = type->As<ErrorType>())
+    {
+        // An error type means that we encountered something we don't understand.
+        //
+        // We should probalby inform the user with an error message here.
+
+        SimpleLayoutInfo info;
+        return GetSimpleLayoutImpl(
+            info,
+            type,
+            rules,
+            outTypeLayout);
+    }
 
     // catch-all case in case nothing matched
-    assert(!"unimplemented");
+    SLANG_ASSERT(!"unimplemented");
     SimpleLayoutInfo info;
     return GetSimpleLayoutImpl(
         info,
@@ -1108,11 +1275,16 @@ SimpleLayoutInfo GetLayout(ExpressionType* inType, LayoutRulesImpl* rules)
     return GetLayoutImpl(inType, rules, nullptr);
 }
 
-RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules)
+RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules, SimpleLayoutInfo offset)
 {
     RefPtr<TypeLayout> typeLayout;
-    GetLayoutImpl(type, rules, &typeLayout);
+    GetLayoutImpl(type, rules, &typeLayout, offset);
     return typeLayout;
+}
+
+RefPtr<TypeLayout> CreateTypeLayout(ExpressionType* type, LayoutRulesImpl* rules)
+{
+    return CreateTypeLayout(type, rules, SimpleLayoutInfo());
 }
 
 SimpleLayoutInfo GetLayout(ExpressionType* type, LayoutRule rule)

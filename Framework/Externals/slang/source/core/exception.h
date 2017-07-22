@@ -110,6 +110,17 @@ namespace Slang
 		{
 		}
 	};
+
+	class InternalError : public Exception
+	{
+	public:
+		InternalError()
+		{}
+		InternalError(const String & message)
+			: Exception(message)
+		{
+		}
+	};
 }
 
 #endif

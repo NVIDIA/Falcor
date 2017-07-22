@@ -52,13 +52,13 @@ void ShaderToy::onLoad()
     mpLinearSampler = Sampler::create(samplerDesc);
 
     // Load shaders
-    mpMainPass = FullScreenPass::create("toyContainer.fs");
+    mpMainPass = FullScreenPass::create(appendShaderExtension("toyContainer.ps"));
 
     // Create Constant buffer
     mpToyVars = GraphicsVars::create(mpMainPass->getProgram()->getActiveVersion()->getReflector());
 
     // Get buffer finding
-    mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getBufferBinding("ToyCB").regIndex;
+    mToyCBBinding = mpMainPass->getProgram()->getActiveVersion()->getReflector()->getBufferBinding("ToyCB").baseRegIndex;
 }
 
 void ShaderToy::onFrameRender()
@@ -66,11 +66,11 @@ void ShaderToy::onFrameRender()
     // iResolution
     float width = (float)mpDefaultFBO->getWidth();
     float height = (float)mpDefaultFBO->getHeight();
-    mpToyVars[mToyCBBinding]["iResolution"] = glm::vec2(width, height);;
+    mpToyVars->getConstantBuffer(0, mToyCBBinding, 0)["iResolution"] = glm::vec2(width, height);;
 
     // iGlobalTime
     float iGlobalTime = (float)mCurrentTime;  
-    mpToyVars[mToyCBBinding]["iGlobalTime"] = iGlobalTime;
+    mpToyVars->getConstantBuffer(0, mToyCBBinding, 0)["iGlobalTime"] = iGlobalTime;
 
     // run final pass
     mpRenderContext->setGraphicsVars(mpToyVars);
@@ -117,7 +117,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     SampleConfig config;
     config.windowDesc.width = 1280;
     config.windowDesc.height = 720;
-    config.deviceDesc.colorFormat = ResourceFormat::RGBA8UnormSrgb;
     config.deviceDesc.enableVsync = true;
     config.windowDesc.resizableWindow = true;
     config.windowDesc.title = "Falcor Shader Toy";

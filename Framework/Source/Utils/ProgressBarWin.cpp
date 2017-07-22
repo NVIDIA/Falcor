@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "Framework.h"
-#ifdef FALCOR_D3D
 #include "ProgressBar.h"
 #include <CommCtrl.h>
 #include <random>
@@ -132,5 +131,3 @@ namespace Falcor
         return create(list, delayInMs);
     }
 }
-
-#endif

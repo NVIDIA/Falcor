@@ -55,9 +55,6 @@ namespace Falcor
 
         // Call the user callback
         onResizeSwapChain();
-
-        // Reset the clock, so that the first frame duration will be correct
-        mFrameRate.resetClock();
     }
 
     void Sample::handleKeyboardEvent(const KeyboardEvent& keyEvent)
@@ -101,7 +98,7 @@ namespace Falcor
 #endif
                 case KeyboardEvent::Key::V:
                     mVsyncOn = !mVsyncOn;
-                    gpDevice->setVSync(mVsyncOn);
+                    gpDevice->toggleVSync(mVsyncOn);
                     mFrameRate.resetClock();
                     break;
                 case KeyboardEvent::Key::F1:
@@ -137,11 +134,8 @@ namespace Falcor
 
     void Sample::handleMouseEvent(const MouseEvent& mouseEvent)
     {
-        if (mpGui->onMouseEvent(mouseEvent))
-        {
-            return;
-        }
-        mpPixelZoom->onMouseEvent(mouseEvent);
+        if (mpGui->onMouseEvent(mouseEvent)) return;
+        if (mpPixelZoom->onMouseEvent(mouseEvent)) return;
         onMouseEvent(mouseEvent);
     }
 
@@ -197,6 +191,7 @@ namespace Falcor
             return;
         }
 
+        Device::Desc d = config.deviceDesc;
         gpDevice = Device::create(mpWindow, config.deviceDesc);
         if (gpDevice == nullptr)
         {
@@ -204,7 +199,7 @@ namespace Falcor
             return;
         }
 
-        if (config.deviceCreatedCallback)
+        if (config.deviceCreatedCallback != nullptr)
         {
             config.deviceCreatedCallback();
         }
@@ -222,19 +217,13 @@ namespace Falcor
         // Init the UI
         initUI();
 
-        // Init VR
-        mVrEnabled = config.enableVR;
-        if (mVrEnabled)
-        {
-            VRSystem::start(mpRenderContext);
-        }
-
         // Load and run
         mArgList.parseCommandLine(GetCommandLineA());
-        mpPixelZoom = PixelZoom::create();
-        mpPixelZoom->init(mpDefaultFBO.get());
+        mpPixelZoom = PixelZoom::create(mpDefaultFBO.get());
+
         onLoad();
         pBar = nullptr;
+        mFrameRate.resetClock();
         mpWindow->msgLoop();
 
         onShutdown();
@@ -408,7 +397,7 @@ namespace Falcor
     void Sample::resizeSwapChain(uint32_t width, uint32_t height)
     {
         mpWindow->resize(width, height);
-        mpPixelZoom->init(gpDevice->getSwapChainFbo().get());
+        mpPixelZoom->onResizeSwapChain(gpDevice->getSwapChainFbo().get());
     }
 
     bool Sample::isKeyPressed(const KeyboardEvent::Key& key) const

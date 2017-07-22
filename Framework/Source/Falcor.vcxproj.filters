@@ -79,9 +79,6 @@
     <ClCompile Include="Graphics\Paths\PathEditor.cpp">
       <Filter>Graphics\Paths</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\ShaderUtils.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Graphics\Material\Material.cpp">
       <Filter>Graphics\Material</Filter>
     </ClCompile>
@@ -199,57 +196,6 @@
     <ClCompile Include="API\LowLevel\RootSignature.cpp">
       <Filter>API\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="API\OpenGL\GLBlendState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLDepthStencilState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLFbo.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLFormats.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLGpuTimer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLProgramReflection.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLProgramVersion.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLRasterizerState.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLRenderContext.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLSampler.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLScreenCapture.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLShader.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLTexture.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLUniformBuffer.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLVao.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="API\OpenGL\GLWindow.cpp">
-      <Filter>API\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3DFormats.cpp">
       <Filter>API\D3D</Filter>
     </ClCompile>
@@ -310,9 +256,6 @@
     <ClCompile Include="API\D3D\D3D11\D3D11Window.cpp">
       <Filter>API\D3D\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12RasterizerState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
@@ -331,13 +274,7 @@
     <ClCompile Include="API\D3D\D3D12\D3D12Vao.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12BlendState.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Buffer.cpp">
-      <Filter>API\D3D\D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="API\D3D\D3D12\D3D12DepthStencilState.cpp">
       <Filter>API\D3D\D3D12</Filter>
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\D3D12Device.cpp">
@@ -471,9 +408,6 @@
     <ClCompile Include="API\DescriptorSet.cpp">
       <Filter>API</Filter>
     </ClCompile>
-    <ClCompile Include="API\ParameterBlock.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
     <ClCompile Include="API\LowLevel\DescriptorPool.cpp">
       <Filter>API\LowLevel</Filter>
     </ClCompile>
@@ -482,6 +416,124 @@
     </ClCompile>
     <ClCompile Include="API\D3D\D3D12\LowLevel\D3D12DescriptorSet.cpp">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKDevice.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKRenderContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\vulkan\VKBuffer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKTexture.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKFormats.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKResourceViews.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKShader.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKFbo.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKCopyContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKGpuTimer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKComputeContext.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKGpuFence.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKLowLevelContextData.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKRootSignature.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKRasterizerState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKProgramVersion.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKVao.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKSampler.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKUniformBuffer.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKGraphicsStateObject.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKResourceAllocator.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\SlangSupport.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorPool.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKState.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorSet.cpp">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Buffer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\SlangSupport.cpp" />
+    <ClCompile Include="API\Vulkan\VkSmartHandle.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12QueryHeap.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\D3D\D3D12\D3D12ProgramVars.cpp">
+      <Filter>API\D3D\D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ComputeContext.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\CopyContext.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Device.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\GpuTimer.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\LowLevel\ResourceAllocator.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\ResourceViews.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VKComputeStateObject.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VkProgramVars.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="API\Vulkan\VkQueryHeap.cpp">
+      <Filter>API\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Effects\TAA\TAA.cpp">
+      <Filter>Effects\TAA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -532,9 +584,6 @@
     </ClInclude>
     <ClInclude Include="Utils\Profiler.h">
       <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\ShaderCommon.h">
-      <Filter>Data</Filter>
     </ClInclude>
     <ClInclude Include="Data\VertexAttrib.h">
       <Filter>Data</Filter>
@@ -604,24 +653,6 @@
     </ClInclude>
     <ClInclude Include="Graphics\Paths\PathEditor.h">
       <Filter>Graphics\Paths</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\BSDFs.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Cameras.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Helpers.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Lights.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="ShadingUtils\Shading.h">
-      <Filter>ShadingUtils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ShaderUtils.h">
-      <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="Data\HlslGlslCommon.h">
       <Filter>Data</Filter>
@@ -698,9 +729,6 @@
     <ClInclude Include="Effects\ToneMapping\ToneMapping.h">
       <Filter>Effects\ToneMapping</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Effects\CsmData.h">
-      <Filter>Data\Effects</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Model\Loaders\BinaryImage.hpp">
       <Filter>Graphics\Model\Loaders</Filter>
     </ClInclude>
@@ -772,12 +800,6 @@
     </ClInclude>
     <ClInclude Include="API\LowLevel\RootSignature.h">
       <Filter>API\LowLevel</Filter>
-    </ClInclude>
-    <ClInclude Include="API\OpenGL\FalcorGL.h">
-      <Filter>API\OpenGL</Filter>
-    </ClInclude>
-    <ClInclude Include="API\OpenGL\GlEnum2Str.h">
-      <Filter>API\OpenGL</Filter>
     </ClInclude>
     <ClInclude Include="API\D3D\D3DState.h">
       <Filter>API\D3D</Filter>
@@ -1552,17 +1574,11 @@
     <ClInclude Include="Utils\DebugDrawer.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Effects\LeanMapData.hlsli">
-      <Filter>Data\Effects</Filter>
-    </ClInclude>
     <ClInclude Include="Graphics\Material\MaterialHistory.h">
       <Filter>Graphics\Material</Filter>
     </ClInclude>
     <ClInclude Include="Effects\AmbientOcclusion\SSAO.h">
       <Filter>Effects\AmbientOcclusion</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Effects\SSAOData.h">
-      <Filter>Data\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Utils\ProgressBar.h">
       <Filter>Utils</Filter>
@@ -1576,23 +1592,59 @@
     <ClInclude Include="Data\Effects\ParticleData.h">
       <Filter>Data\Effects\Particles</Filter>
     </ClInclude>
+    <ClInclude Include="API\vulkan\FalcorVK.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
     <ClInclude Include="Effects\ParticleSystem\ParticleSystem.h">
       <Filter>Effects\ParticleSystem</Filter>
     </ClInclude>
     <ClInclude Include="API\DescriptorSet.h">
       <Filter>API</Filter>
     </ClInclude>
-    <ClInclude Include="API\ParameterBlock.h">
-      <Filter>API</Filter>
-    </ClInclude>
-    <ClInclude Include="API\LowLevel\DescriptorTable.h">
-      <Filter>API\LowLevel</Filter>
-    </ClInclude>
     <ClInclude Include="API\LowLevel\DescriptorPool.h">
       <Filter>API\LowLevel</Filter>
     </ClInclude>
     <ClInclude Include="API\D3D\D3D12\LowLevel\D3D12DescriptorData.h">
       <Filter>API\D3D\D3D12\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\LowLevel\VKDescriptorData.h">
+      <Filter>API\Vulkan\LowLevel</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\VKState.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Framework\Shaders\SceneEditorCommon.slang.h">
+      <Filter>Data\Framework\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\CsmData.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\SSAOData.h">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\ParticleData.h">
+      <Filter>Data\Effects\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\HostDeviceSharedCode.h">
+      <Filter>Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\HostDeviceSharedMacros.h">
+      <Filter>Data</Filter>
+    </ClInclude>
+    <ClInclude Include="API\Vulkan\VKSmartHandle.h">
+      <Filter>API\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="API\QueryHeap.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Effects\LeanMapData.hlsli">
+      <Filter>Data\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects\TAA\TAA.h">
+      <Filter>Effects\TAA</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\ThreadPool.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1719,9 +1771,6 @@
     <Filter Include="API\LowLevel">
       <UniqueIdentifier>{8bb5d38b-eb7d-40a8-a5aa-c934669015b5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="API\OpenGL">
-      <UniqueIdentifier>{61d7bfbe-a0dc-47c5-b185-6811de4040c5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="API\D3D">
       <UniqueIdentifier>{60aa2a7f-98dc-4717-99f2-a4fd141ad6b4}</UniqueIdentifier>
     </Filter>
@@ -1749,19 +1798,28 @@
     <Filter Include="Effects\AmbientOcclusion">
       <UniqueIdentifier>{723ff80c-2107-49c1-8a2b-e01f9d4eb6e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Data\Effects\Particles">
       <UniqueIdentifier>{113ae44c-7970-429b-ba40-22c457f0003d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Effects\ParticleSystem">
       <UniqueIdentifier>{be06907b-0403-4c3b-a59a-ec74cbfdfb86}</UniqueIdentifier>
     </Filter>
+    <Filter Include="API\Vulkan">
+      <UniqueIdentifier>{f191732c-c52a-4867-976e-f96cedcbf908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API\Vulkan\LowLevel">
+      <UniqueIdentifier>{230e7726-da32-47d7-bdf6-c77e62c21ada}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Effects\TAA">
+      <UniqueIdentifier>{d1b8a19e-aea1-4b27-862a-06434b845be7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\CopyLibs.bat" />
     <None Include="..\CopyData.bat" />
-    <None Include="Data\Framework\ParallelReduction.fs">
-      <Filter>Utils\Math</Filter>
-    </None>
     <None Include="..\Externals\dear_imgui\LICENSE">
       <Filter>Externals\dear_imgui</Filter>
     </None>
@@ -2095,87 +2153,119 @@
     <None Include="..\Externals\GLM\glm\gtx\closest_point.inl">
       <Filter>Externals\GLM\gtx</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\Gui.ps">
+    <None Include="Data\Framework\Shaders\Blit.ps.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\Gui.vs">
+    <None Include="Data\Framework\Shaders\Blit.vs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\ParallelReduction.fs">
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\SceneEditorCommon.hlsli">
+    <None Include="Data\Framework\Shaders\FullScreenPass.vs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\TextRenderer.fs">
+    <None Include="Data\Framework\Shaders\Gui.ps.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\TextRenderer.vs">
+    <None Include="Data\Framework\Shaders\Gui.vs.slang">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.ps.hlsl">
+    <None Include="Data\Framework\Shaders\SceneEditorPS.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\SceneEditorVS.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.vs.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\GaussianBlur.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.gs.hlsl">
+    <None Include="Data\Effects\ParticleConstColor.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\ShadowPass.vs.hlsl">
+    <None Include="Data\Effects\ShadowPass.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\SkyBox.ps.hlsl">
+    <None Include="Data\Effects\ShadowPass.vs.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Effects\SkyBox.vs.hlsl">
+    <None Include="Data\Effects\SkyBox.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.gs.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Framework\Shaders\FullScreenPass.vs.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </None>
-    <None Include="Data\Effects\SSAO.ps.hlsl" />
-    <None Include="Data\Effects\GaussianBlur.ps.hlsl">
+    <None Include="Data\Effects\SkyBox.vs.slang">
       <Filter>Data\Effects</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Data\Framework\Shaders\SceneEditorPS.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\SceneEditorVS.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.ps.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.vs.hlsl">
-      <Filter>Data\Framework\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Framework\Shaders\Blit.hlsl" />
-    <FxCompile Include="Data\Effects\ToneMapping.ps.hlsl">
+    <None Include="Data\Effects\SSAO.ps.slang">
       <Filter>Data\Effects</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleConstColor.ps.hlsl">
+    </None>
+    <None Include="Data\Effects\ToneMapping.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\ParticleEmit.cs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleInterpColor.ps.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleInterpColor.ps.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleTexture.ps.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleSimulate.cs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleVertex.vs.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleSort.cs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleEmit.cs.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleTexture.ps.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSimulate.cs.hlsl">
+    </None>
+    <None Include="Data\Effects\ParticleVertex.vs.slang">
       <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
-    <FxCompile Include="Data\Effects\ParticleSort.cs.hlsl">
-      <Filter>Data\Effects\Particles</Filter>
-    </FxCompile>
+    </None>
+    <None Include="Data\DefaultVS.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="ShadingUtils\BSDFs.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Cameras.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Helpers.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Lights.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="ShadingUtils\Shading.slang">
+      <Filter>ShadingUtils</Filter>
+    </None>
+    <None Include="Data\ShaderCommon.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\HostDeviceData.slang">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\Effects\LeanMapping.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Effects\CascadedShadowMap.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\ParallelReduction.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\ShadowPass.gs.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\FullScreenPass.gs.glsl">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
+    <None Include="Data\Effects\TAA.ps.slang">
+      <Filter>Data\Effects</Filter>
+    </None>
+    <None Include="Data\Framework\Shaders\TextRenderer.ps.slang">
+      <Filter>Data\Framework\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

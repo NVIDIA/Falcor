@@ -39,11 +39,11 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const ComputeContext>;
         ~ComputeContext();
 
-        static SharedPtr create();
+        static SharedPtr create(CommandQueueHandle queue);
 
         /** Set the compute variables
         */
-        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpComputeVars != pVars); mpComputeVars = pVars; applyComputeVars(); }
+        void setComputeVars(const ComputeVars::SharedPtr& pVars) { mBindComputeRootSig = mBindComputeRootSig || (mpComputeVars != pVars); mpComputeVars = pVars;}
 
         /** Get the bound program variables object
         */
@@ -59,7 +59,7 @@ namespace Falcor
 
         /** Set a compute state
         */
-        void setComputeState(const ComputeState::SharedPtr& pState) { mpComputeState = pState; applyComputeState(); }
+        void setComputeState(const ComputeState::SharedPtr& pState) { mpComputeState = pState; }
 
         /** Get the currently bound compute state
         */
@@ -102,10 +102,13 @@ namespace Falcor
         /** Reset the context
         */
         virtual void reset() override;
+
+        /** Submit the command list
+        */
+        virtual void flush(bool wait = false) override;
     protected:
         ComputeContext() = default;
         void prepareForDispatch();
-        void applyComputeState();
         void applyComputeVars();
 
         std::stack<ComputeState::SharedPtr> mpComputeStateStack;

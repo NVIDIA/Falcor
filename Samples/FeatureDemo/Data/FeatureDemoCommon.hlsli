@@ -25,16 +25,18 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#define _COMPILE_DEFAULT_VS
+__import ShaderCommon;
+__import DefaultVS;
+__import Effects.CascadedShadowMap;
 #include "VertexAttrib.h"
-#include "Effects/CsmData.h"
 
-cbuffer PerFrameCB : register(b0)
+layout(binding = 0) cbuffer PerFrameCB : register(b0)
 {
-	vec3 gAmbient;
+	float3 gAmbient;
+    float gEnvMapFactorScale;
     CsmData gCsmData;
-    mat4 camVpAtLastCsmUpdate;
+    float4x4 camVpAtLastCsmUpdate;
+    float2 gRenderTargetDim;
 };
 
 struct MainVsOut

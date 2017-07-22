@@ -58,9 +58,9 @@ namespace Falcor
             return D3Dx(BLEND_DEST_ALPHA);
         case BlendState::BlendFunc::OneMinusDstAlpha:
             return D3Dx(BLEND_INV_DEST_ALPHA);
-        case BlendState::BlendFunc::RgbaFactor:
+        case BlendState::BlendFunc::BlendFactor:
             return D3Dx(BLEND_BLEND_FACTOR);
-        case BlendState::BlendFunc::OneMinusRgbaFactor:
+        case BlendState::BlendFunc::OneMinusBlendFactor:
             return D3Dx(BLEND_INV_BLEND_FACTOR);
         case BlendState::BlendFunc::SrcAlphaSaturate:
             return D3Dx(BLEND_SRC_ALPHA_SAT);
@@ -102,7 +102,7 @@ namespace Falcor
     {
         desc.AlphaToCoverageEnable = dxBool(pState->isAlphaToCoverageEnabled());
         desc.IndependentBlendEnable = dxBool(pState->isIndependentBlendEnabled());
-        for (size_t rt = 0; rt < pState->getRtCount(); rt++)
+        for (uint32_t rt = 0; rt < pState->getRtCount(); rt++)
         {
             const BlendState::Desc::RenderTargetDesc& rtDesc = pState->getRtDesc(rt);
             D3Dx(RENDER_TARGET_BLEND_DESC)& d3dRtDesc = desc.RenderTarget[rt];
@@ -206,9 +206,10 @@ namespace Falcor
         }
     }
 
-    void initD3DVertexLayout(const VertexLayout* pLayout, InputElementDescVec& elemDesc)
+    void initD3DVertexLayout(const VertexLayout* pLayout, InputLayoutDesc& layoutDesc)
     {
-        elemDesc.clear();
+        layoutDesc.elements.clear();
+        layoutDesc.names.clear();
 
         for (size_t vb = 0; vb < pLayout->getBufferCount(); vb++)
         {
@@ -224,16 +225,16 @@ namespace Falcor
                     element.InputSlotClass = getD3DInputClass(pVB->getInputClass());
                     element.InstanceDataStepRate = pVB->getInstanceStepRate();
                     const auto& SemanticName = pVB->getElementName(elemID);
+                    layoutDesc.names.push_back(std::make_unique<char[]>(SemanticName.size() + 1));
+                    char* name = layoutDesc.names.back().get();
+                    memcpy(name, SemanticName.c_str(), SemanticName.size());
+                    name[SemanticName.size()] = 0;
 
                     for (uint32_t arrayIndex = 0; arrayIndex < pVB->getElementArraySize(elemID); arrayIndex++)
                     {
-                        // Reallocating name for each array index simplifies the destructor
-                        char* name = new char[SemanticName.size() + 1];
-                        memcpy(name, SemanticName.c_str(), SemanticName.size());
-                        name[SemanticName.size()] = 0;
                         element.SemanticName = name;
                         element.SemanticIndex = arrayIndex;
-                        elemDesc.push_back(element);
+                        layoutDesc.elements.push_back(element);
 
                         element.AlignedByteOffset += getFormatBytesPerBlock(pVB->getElementFormat(elemID));
                     }

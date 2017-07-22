@@ -6,6 +6,12 @@
 
 #include <assert.h>
 
+// Don't signal errors for stuff we don't implement here,
+// and instead just try to return things defensively
+//
+// Slang developers can switch this when debugging.
+#define SLANG_REFLECTION_UNEXPECTED() do {} while(0)
+
 // Implementation to back public-facing reflection API
 
 using namespace Slang;
@@ -100,11 +106,19 @@ SLANG_API SlangTypeKind spReflectionType_GetKind(SlangReflectionType* inType)
     {
         return SLANG_TYPE_KIND_CONSTANT_BUFFER;
     }
+    else if (type->As<TextureBufferType>())
+    {
+        return SLANG_TYPE_KIND_TEXTURE_BUFFER;
+    }
+    else if (type->As<GLSLShaderStorageBufferType>())
+    {
+        return SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER;
+    }
     else if (auto samplerStateType = type->As<SamplerStateType>())
     {
         return SLANG_TYPE_KIND_SAMPLER_STATE;
     }
-    else if (auto textureType = type->As<TextureType>())
+    else if (auto textureType = type->As<TextureTypeBase>())
     {
         return SLANG_TYPE_KIND_RESOURCE;
     }
@@ -115,10 +129,6 @@ SLANG_API SlangTypeKind spReflectionType_GetKind(SlangReflectionType* inType)
         return SLANG_TYPE_KIND_RESOURCE;    \
     } while(0)
 
-    CASE(HLSLBufferType);
-    CASE(HLSLRWBufferType);
-    CASE(HLSLBufferType);
-    CASE(HLSLRWBufferType);
     CASE(HLSLStructuredBufferType);
     CASE(HLSLRWStructuredBufferType);
     CASE(HLSLAppendStructuredBufferType);
@@ -140,8 +150,13 @@ SLANG_API SlangTypeKind spReflectionType_GetKind(SlangReflectionType* inType)
             return SLANG_TYPE_KIND_STRUCT;
         }
     }
+    else if (auto errorType = type->As<ErrorType>())
+    {
+        // This means we saw a type we didn't understand in the user's code
+        return SLANG_TYPE_KIND_NONE;
+    }
 
-    assert(!"unexpected");
+    SLANG_REFLECTION_UNEXPECTED();
     return SLANG_TYPE_KIND_NONE;
 }
 
@@ -191,11 +206,11 @@ SLANG_API size_t spReflectionType_GetElementCount(SlangReflectionType* inType)
 
     if(auto arrayType = dynamic_cast<ArrayExpressionType*>(type))
     {
-        return GetIntVal(arrayType->ArrayLength);
+        return arrayType->ArrayLength ? (size_t) GetIntVal(arrayType->ArrayLength) : 0;
     }
     else if( auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
-        return GetIntVal(vectorType->elementCount);
+        return (size_t) GetIntVal(vectorType->elementCount);
     }
 
     return 0;
@@ -233,7 +248,7 @@ SLANG_API unsigned int spReflectionType_GetRowCount(SlangReflectionType* inType)
 
     if(auto matrixType = dynamic_cast<MatrixExpressionType*>(type))
     {
-        return GetIntVal(matrixType->getRowCount());
+        return (unsigned int) GetIntVal(matrixType->getRowCount());
     }
     else if(auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
@@ -254,11 +269,11 @@ SLANG_API unsigned int spReflectionType_GetColumnCount(SlangReflectionType* inTy
 
     if(auto matrixType = dynamic_cast<MatrixExpressionType*>(type))
     {
-        return GetIntVal(matrixType->getColumnCount());
+        return (unsigned int) GetIntVal(matrixType->getColumnCount());
     }
     else if(auto vectorType = dynamic_cast<VectorExpressionType*>(type))
     {
-        return GetIntVal(vectorType->elementCount);
+        return (unsigned int) GetIntVal(vectorType->elementCount);
     }
     else if( auto basicType = dynamic_cast<BasicExpressionType*>(type) )
     {
@@ -299,7 +314,7 @@ SLANG_API SlangScalarType spReflectionType_GetScalarType(SlangReflectionType* in
 #undef CASE
 
         default:
-            assert(!"unexpected");
+            SLANG_REFLECTION_UNEXPECTED();
             return SLANG_SCALAR_TYPE_NONE;
             break;
         }
@@ -318,7 +333,7 @@ SLANG_API SlangResourceShape spReflectionType_GetResourceShape(SlangReflectionTy
         type = arrayType->BaseType.Ptr();
     }
 
-    if(auto textureType = type->As<TextureType>())
+    if(auto textureType = type->As<TextureTypeBase>())
     {
         return textureType->getShape();
     }
@@ -329,10 +344,6 @@ SLANG_API SlangResourceShape spReflectionType_GetResourceShape(SlangReflectionTy
         return SHAPE;               \
     } while(0)
 
-    CASE(HLSLBufferType,                    SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ);
-    CASE(HLSLRWBufferType,                  SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
-    CASE(HLSLBufferType,                    SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ);
-    CASE(HLSLRWBufferType,                  SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
     CASE(HLSLStructuredBufferType,          SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_READ);
     CASE(HLSLRWStructuredBufferType,        SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
     CASE(HLSLAppendStructuredBufferType,    SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_APPEND);
@@ -355,7 +366,7 @@ SLANG_API SlangResourceAccess spReflectionType_GetResourceAccess(SlangReflection
         type = arrayType->BaseType.Ptr();
     }
 
-    if(auto textureType = type->As<TextureType>())
+    if(auto textureType = type->As<TextureTypeBase>())
     {
         return textureType->getAccess();
     }
@@ -366,10 +377,6 @@ SLANG_API SlangResourceAccess spReflectionType_GetResourceAccess(SlangReflection
         return ACCESS;              \
     } while(0)
 
-    CASE(HLSLBufferType,                    SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ);
-    CASE(HLSLRWBufferType,                  SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
-    CASE(HLSLBufferType,                    SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ);
-    CASE(HLSLRWBufferType,                  SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
     CASE(HLSLStructuredBufferType,          SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_READ);
     CASE(HLSLRWStructuredBufferType,        SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
     CASE(HLSLAppendStructuredBufferType,    SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_APPEND);
@@ -377,6 +384,9 @@ SLANG_API SlangResourceAccess spReflectionType_GetResourceAccess(SlangReflection
     CASE(HLSLByteAddressBufferType,         SLANG_BYTE_ADDRESS_BUFFER,  SLANG_RESOURCE_ACCESS_READ);
     CASE(HLSLRWByteAddressBufferType,       SLANG_BYTE_ADDRESS_BUFFER,  SLANG_RESOURCE_ACCESS_READ_WRITE);
     CASE(UntypedBufferResourceType,         SLANG_BYTE_ADDRESS_BUFFER,  SLANG_RESOURCE_ACCESS_READ);
+
+    // This isn't entirely accurate, but I can live with it for now
+    CASE(GLSLShaderStorageBufferType,       SLANG_STRUCTURED_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
 #undef CASE
 
     return SLANG_RESOURCE_ACCESS_NONE;
@@ -392,7 +402,7 @@ SLANG_API SlangReflectionType* spReflectionType_GetResourceResultType(SlangRefle
         type = arrayType->BaseType.Ptr();
     }
 
-    if (auto textureType = type->As<TextureType>())
+    if (auto textureType = type->As<TextureTypeBase>())
     {
         return convert(textureType->elementType.Ptr());
     }
@@ -402,11 +412,6 @@ SLANG_API SlangReflectionType* spReflectionType_GetResourceResultType(SlangRefle
     else if(type->As<TYPE>()) do {                                                      \
         return convert(type->As<TYPE>()->elementType.Ptr());                            \
     } while(0)
-
-    CASE(HLSLBufferType,                    SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ);
-    CASE(HLSLRWBufferType,                  SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
-    CASE(HLSLBufferType,                    SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ);
-    CASE(HLSLRWBufferType,                  SLANG_TEXTURE_BUFFER, SLANG_RESOURCE_ACCESS_READ_WRITE);
 
     // TODO: structured buffer needs to expose type layout!
 
@@ -460,16 +465,28 @@ SLANG_API size_t spReflectionTypeLayout_GetElementStride(SlangReflectionTypeLayo
 
     if( auto arrayTypeLayout = dynamic_cast<ArrayTypeLayout*>(typeLayout))
     {
-        if(category == SLANG_PARAMETER_CATEGORY_UNIFORM)
+        switch (category)
         {
+        // We store the stride explictly for the uniform case
+        case SLANG_PARAMETER_CATEGORY_UNIFORM:
             return arrayTypeLayout->uniformStride;
-        }
-        else
-        {
-            auto elementTypeLayout = arrayTypeLayout->elementTypeLayout;
-            auto info = elementTypeLayout->FindResourceInfo(LayoutResourceKind(category));
-            if(!info) return 0;
-            return info->count;
+
+        // For most other cases (resource registers), the "stride"
+        // of an array is simply the number of resources (if any)
+        // consumed by its element type.
+        default:
+            {
+                auto elementTypeLayout = arrayTypeLayout->elementTypeLayout;
+                auto info = elementTypeLayout->FindResourceInfo(LayoutResourceKind(category));
+                if(!info) return 0;
+                return info->count;
+            }
+
+        // An import special case, though, is Vulkan descriptor-table slots,
+        // where an entire array will use a single `binding`, so that the
+        // effective stride is zero:
+        case SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT:
+            return 0;
         }
     }
 
@@ -635,7 +652,70 @@ SLANG_API unsigned spReflectionParameter_GetBindingSpace(SlangReflectionParamete
     return 0;
 }
 
+// Helpers for getting parameter count
+
+namespace Slang
+{
+    static unsigned getParameterCount(RefPtr<TypeLayout> typeLayout)
+    {
+        if(auto parameterBlockLayout = typeLayout.As<ParameterBlockTypeLayout>())
+        {
+            typeLayout = parameterBlockLayout->elementTypeLayout;
+        }
+
+        if(auto structLayout = typeLayout.As<StructTypeLayout>())
+        {
+            return (unsigned) structLayout->fields.Count();
+        }
+
+        return 0;
+    }
+
+    static VarLayout* getParameterByIndex(RefPtr<TypeLayout> typeLayout, unsigned index)
+    {
+        if(auto parameterBlockLayout = typeLayout.As<ParameterBlockTypeLayout>())
+        {
+            typeLayout = parameterBlockLayout->elementTypeLayout;
+        }
+
+        if(auto structLayout = typeLayout.As<StructTypeLayout>())
+        {
+            return structLayout->fields[index];
+        }
+
+        return 0;
+    }
+}
+
 // Entry Point Reflection
+
+SLANG_API char const* spReflectionEntryPoint_getName(
+    SlangReflectionEntryPoint* inEntryPoint)
+{
+    auto entryPointLayout = convert(inEntryPoint);
+    if(!entryPointLayout) return 0;
+
+    return entryPointLayout->entryPoint->getName().begin();
+}
+
+SLANG_API unsigned spReflectionEntryPoint_getParameterCount(
+    SlangReflectionEntryPoint* inEntryPoint)
+{
+    auto entryPointLayout = convert(inEntryPoint);
+    if(!entryPointLayout) return 0;
+
+    return getParameterCount(entryPointLayout);
+}
+
+SLANG_API SlangReflectionVariableLayout* spReflectionEntryPoint_getParameterByIndex(
+    SlangReflectionEntryPoint*  inEntryPoint,
+    unsigned                    index)
+{
+    auto entryPointLayout = convert(inEntryPoint);
+    if(!entryPointLayout) return 0;
+
+    return convert(getParameterByIndex(entryPointLayout, index));
+}
 
 SLANG_API SlangStage spReflectionEntryPoint_getStage(SlangReflectionEntryPoint* inEntryPoint)
 {
@@ -660,18 +740,61 @@ SLANG_API void spReflectionEntryPoint_getComputeThreadGroupSize(
     auto entryPointFunc = entryPointLayout->entryPoint;
     if(!entryPointFunc) return;
 
-    auto numThreadsAttribute = entryPointFunc->FindModifier<HLSLNumThreadsAttribute>();
-    if(!numThreadsAttribute) return;
+    SlangUInt sizeAlongAxis[3] = { 1, 1, 1 };
 
-    if(axisCount > 0) outSizeAlongAxis[0] = numThreadsAttribute->x;
-    if(axisCount > 1) outSizeAlongAxis[1] = numThreadsAttribute->y;
-    if(axisCount > 2) outSizeAlongAxis[2] = numThreadsAttribute->z;
+    // First look for the HLSL case, where we have an attribute attached to the entry point function
+    auto numThreadsAttribute = entryPointFunc->FindModifier<HLSLNumThreadsAttribute>();
+    if (numThreadsAttribute)
+    {
+        sizeAlongAxis[0] = numThreadsAttribute->x;
+        sizeAlongAxis[1] = numThreadsAttribute->y;
+        sizeAlongAxis[2] = numThreadsAttribute->z;
+    }
+    else
+    {
+        // Fall back to the GLSL case, which requires a search over global-scope declarations
+        // to look for anything with the `local_size_*` qualifier
+        auto module = dynamic_cast<ProgramSyntaxNode*>(entryPointFunc->ParentDecl);
+        if (module)
+        {
+            for (auto dd : module->Members)
+            {
+                for (auto mod : dd->GetModifiersOfType<GLSLLocalSizeLayoutModifier>())
+                {
+                    if (auto xMod = dynamic_cast<GLSLLocalSizeXLayoutModifier*>(mod))
+                        sizeAlongAxis[0] = (SlangUInt) getIntegerLiteralValue(xMod->valToken);
+                    else if (auto yMod = dynamic_cast<GLSLLocalSizeYLayoutModifier*>(mod))
+                        sizeAlongAxis[1] = (SlangUInt) getIntegerLiteralValue(yMod->valToken);
+                    else if (auto zMod = dynamic_cast<GLSLLocalSizeZLayoutModifier*>(mod))
+                        sizeAlongAxis[2] = (SlangUInt) getIntegerLiteralValue(zMod->valToken);
+                }
+            }
+        }
+    }
+
+    //
+
+    if(axisCount > 0) outSizeAlongAxis[0] = sizeAlongAxis[0];
+    if(axisCount > 1) outSizeAlongAxis[1] = sizeAlongAxis[1];
+    if(axisCount > 2) outSizeAlongAxis[2] = sizeAlongAxis[2];
     for( SlangUInt aa = 3; aa < axisCount; ++aa )
     {
         outSizeAlongAxis[aa] = 1;
     }
 }
 
+SLANG_API int spReflectionEntryPoint_usesAnySampleRateInput(
+    SlangReflectionEntryPoint* inEntryPoint)
+{
+    auto entryPointLayout = convert(inEntryPoint);
+    if(!entryPointLayout)
+        return 0;
+
+    if (entryPointLayout->profile.GetStage() != Stage::Fragment)
+        return 0;
+
+    return (entryPointLayout->flags & EntryPointLayout::Flag::usesAnySampleRateInput) != 0;
+}
 
 // Shader Reflection
 
@@ -688,7 +811,7 @@ SLANG_API unsigned spReflection_GetParameterCount(SlangReflection* inProgram)
 
     if(auto globalStructLayout = globalLayout.As<StructTypeLayout>())
     {
-        return globalStructLayout->fields.Count();
+        return (unsigned) globalStructLayout->fields.Count();
     }
 
     return 0;
@@ -842,11 +965,15 @@ static void emitReflectionVarBindingInfoJSON(
     CASE(VERTEX_INPUT, vertexInput);
     CASE(FRAGMENT_OUTPUT, fragmentOutput);
     CASE(SAMPLER_STATE, samplerState);
+    CASE(UNIFORM, uniform);
+    CASE(DESCRIPTOR_TABLE_SLOT, descriptorTableSlot);
+    CASE(SPECIALIZATION_CONSTANT, specializationConstant);
+    CASE(MIXED, mixed);
     #undef CASE
 
         default:
             write(writer, "unknown");
-            assert(!"unexpected");
+            SLANG_UNEXPECTED("unhandled case");
             break;
         }
         write(writer, "\"");
@@ -950,7 +1077,7 @@ static void emitReflectionScalarTypeInfoJSON(
     {
     default:
         write(writer, "unknown");
-        assert(!"unexpected");
+        SLANG_UNEXPECTED("unhandled case");
         break;
 #define CASE(TAG, ID) case slang::TypeReflection::ScalarType::TAG: write(writer, #ID); break
         CASE(Void, void);
@@ -988,7 +1115,7 @@ static void emitReflectionTypeInfoJSON(
             {
             default:
                 write(writer, "unknown");
-                assert(!"unexpected");
+                SLANG_UNEXPECTED("unhandled case");
                 break;
 
 #define CASE(SHAPE, NAME) case SLANG_##SHAPE: write(writer, #NAME); break
@@ -1020,7 +1147,7 @@ static void emitReflectionTypeInfoJSON(
                 {
                 default:
                     write(writer, "unknown");
-                    assert(!"unexpected");
+                    SLANG_UNEXPECTED("unhandled case");
                     break;
 
                 case SLANG_RESOURCE_ACCESS_READ:
@@ -1038,6 +1165,24 @@ static void emitReflectionTypeInfoJSON(
 
     case SLANG_TYPE_KIND_CONSTANT_BUFFER:
         write(writer, "\"kind\": \"constantBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeJSON(
+            writer,
+            type->getElementType());
+        break;
+
+    case SLANG_TYPE_KIND_TEXTURE_BUFFER:
+        write(writer, "\"kind\": \"textureBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeJSON(
+            writer,
+            type->getElementType());
+        break;
+
+    case SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER:
+        write(writer, "\"kind\": \"shaderStorageBuffer\"");
         write(writer, ",\n");
         write(writer, "\"elementType\": ");
         emitReflectionTypeJSON(
@@ -1114,7 +1259,7 @@ static void emitReflectionTypeInfoJSON(
         break;
 
     default:
-        assert(!"unimplemented");
+        SLANG_UNEXPECTED("unhandled case");
         break;
     }
 }
@@ -1180,6 +1325,23 @@ static void emitReflectionTypeLayoutInfoJSON(
             typeLayout->getElementTypeLayout());
         break;
 
+    case SLANG_TYPE_KIND_TEXTURE_BUFFER:
+        write(writer, "\"kind\": \"textureBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeLayoutJSON(
+            writer,
+            typeLayout->getElementTypeLayout());
+        break;
+
+    case SLANG_TYPE_KIND_SHADER_STORAGE_BUFFER:
+        write(writer, "\"kind\": \"shaderStorageBuffer\"");
+        write(writer, ",\n");
+        write(writer, "\"elementType\": ");
+        emitReflectionTypeLayoutJSON(
+            writer,
+            typeLayout->getElementTypeLayout());
+        break;
     }
 
     // TODO: emit size info for types
@@ -1217,58 +1379,6 @@ static void emitReflectionVarInfoJSON(
     write(writer, "\"type\": ");
     emitReflectionTypeJSON(writer, var->getType());
 }
-
-#if 0
-static void emitReflectionBindingInfoJSON(
-    PrettyWriter& writer,
-    
-    ReflectionParameterNode* param)
-{
-    auto info = &param->binding;
-
-    if( info->category == SLANG_PARAMETER_CATEGORY_MIXED )
-    {
-        write(writer,"\"bindings\": [\n");
-        indent(writer);
-
-        ReflectionSize bindingCount = info->bindingCount;
-        assert(bindingCount);
-        ReflectionParameterBindingInfo* bindings = info->bindings;
-        for( ReflectionSize bb = 0; bb < bindingCount; ++bb )
-        {
-            if (bb != 0) write(writer, ",\n");
-
-            write(writer,"{");
-            auto& binding = bindings[bb];
-            emitReflectionVarBindingInfoJSON(
-                writer,
-                binding.category,
-                binding.index,
-                (ReflectionSize) param->GetTypeLayout()->GetSize(binding.category),
-                binding.space);
-
-            write(writer,"}");
-        }
-        dedent(writer);
-        write(writer,"\n]");
-    }
-    else
-    {
-        write(writer,"\"binding\": {");
-        indent(writer);
-
-        emitReflectionVarBindingInfoJSON(
-            writer,
-            info->category,
-            info->index,
-            (ReflectionSize) param->GetTypeLayout()->GetSize(info->category),
-            info->space);
-
-        dedent(writer);
-        write(writer,"}");
-    }
-}
-#endif
 
 static void emitReflectionParamJSON(
     PrettyWriter&                       writer,
@@ -1340,6 +1450,68 @@ Range<T> range(T end)
     return Range<T>(T(0), end);
 }
 
+static void emitReflectionEntryPointJSON(
+    PrettyWriter&                   writer,
+    slang::EntryPointReflection*    entryPoint)
+{
+    write(writer, "{\n");
+    indent(writer);
+
+    emitReflectionNameInfoJSON(writer, entryPoint->getName());
+
+    switch (entryPoint->getStage())
+    {
+    case SLANG_STAGE_VERTEX:    write(writer, ",\n\"stage:\": \"vertex\"");     break;
+    case SLANG_STAGE_HULL:      write(writer, ",\n\"stage:\": \"hull\"");       break;
+    case SLANG_STAGE_DOMAIN:    write(writer, ",\n\"stage:\": \"domain\"");     break;
+    case SLANG_STAGE_GEOMETRY:  write(writer, ",\n\"stage:\": \"geometry\"");   break;
+    case SLANG_STAGE_FRAGMENT:  write(writer, ",\n\"stage:\": \"fragment\"");   break;
+    case SLANG_STAGE_COMPUTE:   write(writer, ",\n\"stage:\": \"compute\"");    break;
+    default:
+        break;
+    }
+
+    auto parameterCount = entryPoint->getParameterCount();
+    if (parameterCount)
+    {
+        write(writer, ",\n\"parameters\": [\n");
+        indent(writer);
+
+        for( auto pp : range(parameterCount) )
+        {
+            if(pp != 0) write(writer, ",\n");
+
+            auto parameter = entryPoint->getParameterByIndex(pp);
+            emitReflectionParamJSON(writer, parameter);
+        }
+
+        dedent(writer);
+        write(writer, "\n]");
+    }
+
+    if (entryPoint->usesAnySampleRateInput())
+    {
+        write(writer, ",\n\"usesAnySampleRateInput\": true");
+    }
+
+    if (entryPoint->getStage() == SLANG_STAGE_COMPUTE)
+    {
+        SlangUInt threadGroupSize[3];
+        entryPoint->getComputeThreadGroupSize(3, threadGroupSize);
+
+        write(writer, ",\n\"threadGroupSize\": [");
+        for (int ii = 0; ii < 3; ++ii)
+        {
+            if (ii != 0) write(writer, ", ");
+            write(writer, threadGroupSize[ii]);
+        }
+        write(writer, "]");
+    }
+
+    dedent(writer);
+    write(writer, "\n}");
+}
+
 static void emitReflectionJSON(
     PrettyWriter&               writer,
     slang::ShaderReflection*    programReflection)
@@ -1360,6 +1532,25 @@ static void emitReflectionJSON(
 
     dedent(writer);
     write(writer, "\n]");
+
+    auto entryPointCount = programReflection->getEntryPointCount();
+    if (entryPointCount)
+    {
+        write(writer, ",\n\"entryPoints\": [\n");
+        indent(writer);
+
+        for (auto ee : range(entryPointCount))
+        {
+            if (ee != 0) write(writer, ",\n");
+
+            auto entryPoint = programReflection->getEntryPointByIndex(ee);
+            emitReflectionEntryPointJSON(writer, entryPoint);
+        }
+
+        dedent(writer);
+        write(writer, "\n]");
+    }
+
     dedent(writer);
     write(writer, "\n}\n");
 }

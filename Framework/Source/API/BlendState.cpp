@@ -31,10 +31,18 @@
 
 namespace Falcor
 {
+
+    BlendState::SharedPtr BlendState::create(const Desc& desc)
+    {
+        return SharedPtr(new BlendState(desc));
+    }
+
     BlendState::Desc::Desc()
     {
         mRtDesc.resize(Fbo::getMaxColorTargetCount());
     }
+
+    BlendState::~BlendState() = default;
 
     BlendState::Desc& BlendState::Desc::setRtParams(uint32_t rtIndex, BlendOp rgbOp, BlendOp alphaOp, BlendFunc srcRgbFunc, BlendFunc dstRgbFunc, BlendFunc srcAlphaFunc, BlendFunc dstAlphaFunc)
     {

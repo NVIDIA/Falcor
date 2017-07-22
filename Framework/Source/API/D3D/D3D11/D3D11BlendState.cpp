@@ -56,9 +56,9 @@ namespace Falcor
             return D3D11_BLEND_DEST_ALPHA;
         case BlendState::BlendFunc::OneMinusDstAlpha:
             return D3D11_BLEND_INV_DEST_ALPHA;
-        case BlendState::BlendFunc::RgbaFactor:
+        case BlendState::BlendFunc::BlendFactor:
             return D3D11_BLEND_BLEND_FACTOR;
-        case BlendState::BlendFunc::OneMinusRgbaFactor:
+        case BlendState::BlendFunc::OneMinusBlendFactor:
             return D3D11_BLEND_INV_BLEND_FACTOR;
         case BlendState::BlendFunc::SrcAlphaSaturate:
             return D3D11_BLEND_SRC_ALPHA_SAT;

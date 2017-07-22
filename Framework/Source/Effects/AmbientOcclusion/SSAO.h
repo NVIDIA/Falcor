@@ -123,8 +123,17 @@ namespace Falcor
         Fbo::SharedPtr mpAOFbo;
         GraphicsState::SharedPtr mpSSAOState;
         Sampler::SharedPtr mpPointSampler;
-
         Texture::SharedPtr mpNoiseTexture;
+
+        struct
+        {
+            ProgramVars::BindLocation internalPerFrameCB;
+            ProgramVars::BindLocation ssaoCB;
+            ProgramVars::BindLocation sampler;
+            ProgramVars::BindLocation depthTex;
+            ProgramVars::BindLocation normalTex;
+            ProgramVars::BindLocation noiseTex;
+        } mBindLocations;
 
         uint32_t mHemisphereDistribution = (uint32_t)SampleDistribution::Random;
 

@@ -37,11 +37,18 @@ namespace Falcor
     class DepthStencilState;
     class VertexLayout;
 
-    using InputElementDescVec = std::vector < D3Dx(INPUT_ELEMENT_DESC) >;
+    // We need this because the D3D objects require a string. This ensures that once the descs are destroyed, the strings get destroyed as well
+    struct InputLayoutDesc
+    {
+        std::vector < D3Dx(INPUT_ELEMENT_DESC)> elements;
+        std::vector<std::unique_ptr<char[]>> names; // Can't use strings directly because the vector size is unknown and vector reallocations will change the addresses we used in INPUT_ELEMENT_DESC 
+    };
+
+
     void initD3DBlendDesc(const BlendState* pFalcorDesc, D3Dx(BLEND_DESC)& d3dDesc);
     void initD3DRasterizerDesc(const RasterizerState* pState, D3Dx(RASTERIZER_DESC)& desc);
     void initD3DDepthStencilDesc(const DepthStencilState* pState, D3Dx(DEPTH_STENCIL_DESC)& desc);
-    void initD3DVertexLayout(const VertexLayout* pLayout, InputElementDescVec& elemDesc);
+    void initD3DVertexLayout(const VertexLayout* pLayout, InputLayoutDesc& inputDesc);
     void initD3DSamplerDesc(const Sampler* pSampler, D3Dx(SAMPLER_DESC)& desc);
 
     inline D3D_PRIMITIVE_TOPOLOGY getD3DPrimitiveTopology(Vao::Topology topology)

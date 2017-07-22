@@ -41,7 +41,7 @@ public:
     enum class TestResult
     {
         Pass,
-        Fail, 
+        Fail,
         Crash
     };
 
@@ -67,13 +67,13 @@ protected:
     virtual void onInit() = 0;
 
     //Used to gen correct filename in base class method
-    std::string mTestName; 
+    std::string mTestName;
     std::vector<TestData> mpTestResults;
 
     class TestFunction
     {
     public:
-        TestFunction() {} 
+        TestFunction() {}
         virtual TestData operator()() { return TestData(); }
         std::string mName;
     };
@@ -86,13 +86,13 @@ protected:
         std::string wholeName = std::string(typeid(*newTestFunctor).name());
         size_t colonIndex = wholeName.find(":");
         newTestFunctor->mName = wholeName.substr(colonIndex + 2, std::string::npos);
- 
+
         mpTestList.push_back(newTestFunctor);
     }
 
     std::vector<TestFunction*> mpTestList;
 
-private: 
+private:
     class ResultSummary
     {
     public:
@@ -110,7 +110,7 @@ private:
         uint32_t fail;
         uint32_t crash;
     } mResultSummary;
-     
+
     class DummyWindowCallbacks : public Window::ICallbacks
     {
         void renderFrame() override {}

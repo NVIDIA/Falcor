@@ -40,11 +40,15 @@ namespace Falcor
         using SharedConstPtr = std::shared_ptr<const ResourceAllocator>;
 
         static SharedPtr create(size_t pageSize, GpuFence::SharedPtr pFence);
-        struct AllocationData
+        struct BaseData
         {
-            ResourceHandle pResourceHandle = nullptr;
-            GpuAddress gpuAddress = 0;
+            ResourceHandle pResourceHandle;
+            GpuAddress offset = 0;
             uint8_t* pData = nullptr;
+        };
+
+        struct AllocationData : public BaseData
+        {
             uint64_t pageID = 0;
             uint64_t fenceValue = 0;
 
@@ -60,13 +64,10 @@ namespace Falcor
 
     private:
         ResourceAllocator(size_t pageSize, GpuFence::SharedPtr pFence) : mPageSize(pageSize), mpFence(pFence) {}
-        struct PageData
+        struct PageData : public BaseData
         {
             uint32_t allocationsCount = 0;
             size_t currentOffset = 0;
-            ResourceHandle pResourceHandle = nullptr;
-            GpuAddress gpuAddress = 0;
-            uint8_t* pData = nullptr;
 
             using UniquePtr = std::unique_ptr<PageData>;
         };
@@ -81,6 +82,7 @@ namespace Falcor
         std::queue<PageData::UniquePtr> mAvailablePages;
 
         void allocateNewPage();
+        static void initBasePageData(BaseData& data, size_t size);
     };
 }
 #endif // FALCOR_LOW_LEVEL_API

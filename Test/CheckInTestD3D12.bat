@@ -1,0 +1,1 @@
+call python.exe RunAllTests.py -ss -ref \\netapp-wa02\public\Falcor\VulkanReferenceResultsHub -tests TestListSamplesD3D12.txt

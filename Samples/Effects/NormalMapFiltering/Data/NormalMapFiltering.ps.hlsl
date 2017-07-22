@@ -25,33 +25,16 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-#include "ShaderCommon.h"
-#include "Shading.h"
-#define _COMPILE_DEFAULT_VS
-#include "VertexAttrib.h"
-#include "Effects/LeanMapData.hlsli"
+#import "ShaderCommon.slang"
+#import "Shading.slang"
+__import DefaultVS;
 
 cbuffer PerFrameCB : register(b0)
 {
     float3 gAmbient;
 };
 
-#ifdef _MS_USER_NORMAL_MAPPING
-Texture2D gLeanMaps[_LEAN_MAP_COUNT] : register(t20);
-SamplerState gSampler : register(s10);
-
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
-{
-    if (mat.desc.hasNormalMap != 0)
-    {
-        applyLeanMap(gLeanMaps[mat.values.id], gSampler, shAttr);
-    }
-}
-#endif
-
-#include "shading.h"
-
-vec4 main(VS_OUT vOut) : SV_TARGET
+float4 main(VS_OUT vOut) : SV_TARGET
 {
     ShadingAttribs shAttr;
     prepareShadingAttribs(gMaterial, vOut.posW, gCam.position, vOut.normalW, vOut.bitangentW, vOut.texC, shAttr);
@@ -64,6 +47,6 @@ vec4 main(VS_OUT vOut) : SV_TARGET
         evalMaterial(shAttr, gLights[l], result, l == 0);
     }
 
-    vec4 finalColor = vec4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
+    float4 finalColor = float4(result.finalValue + gAmbient * result.diffuseAlbedo, 1.f);
     return finalColor;
 }

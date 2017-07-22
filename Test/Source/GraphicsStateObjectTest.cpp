@@ -92,9 +92,7 @@ testing_func(GraphicsStateObjectTest, TestCreate)
             desc.setSampleMask(sampleMask);
 
             GraphicsStateObject::SharedPtr gObj = GraphicsStateObject::create(desc);
-            if (gObj->getDesc().getBlendState()->getApiHandle() != blendState->getApiHandle() ||
-                gObj->getDesc().getDepthStencilState()->getApiHandle() != depthState->getApiHandle() ||
-                gObj->getDesc().getFboDesc().getColorTargetFormat(0) != fboDesc.getColorTargetFormat(0) ||
+            if (gObj->getDesc().getFboDesc().getColorTargetFormat(0) != fboDesc.getColorTargetFormat(0) ||
                 gObj->getDesc().getPrimitiveType() != primType ||
                 //would rather check api handle than name for program version, gives unresolved external
                 gObj->getDesc().getProgramVersion()->getName() != program->getActiveVersion()->getName() ||

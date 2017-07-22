@@ -50,8 +50,8 @@ struct PostProcessOut
 PostProcessOut main(PostProcessIn vIn)
 {
     PostProcessOut vOut;
-    vOut.pos = (mul(gWvpMat, vIn.pos));
-    vOut.posW = (mul(gWvpMat, vIn.pos)).xyz;
-	vOut.normalW = (mul(gWorldMat, float4(vIn.normal, 0))).xyz;
+    vOut.pos = (mul(vIn.pos, gWvpMat));
+    vOut.posW = (mul(vIn.pos, gWorldMat)).xyz;
+	vOut.normalW = (mul(float4(vIn.normal, 0), gWorldMat)).xyz;
     return vOut;
 }

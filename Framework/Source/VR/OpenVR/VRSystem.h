@@ -65,10 +65,6 @@
 #include "VRDisplay.h"
 #include "VRPlayArea.h"
 
-#if !defined( FALCOR_GL ) && !defined( FALCOR_D3D )
-#error VRWrapper.h requires preprocessor definitions of *either* FALCOR_GL or FALCOR_D3D
-#endif
-
 #pragma comment(lib, "openvr_api.lib")
 
 // Forward declare OpenVR system class types to remove "openvr.h" dependencies from the headers
@@ -91,9 +87,11 @@ namespace Falcor
         // Constructor and destructor methods 
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        // Create an OpenVR system class and initialize the system
-        static VRSystem* start( RenderContext::SharedPtr renderCtx, bool enableVSync = true );
-
+        /** Create an OpenVR system class and initialize the system.
+            If using Vulkan, this function needs to be called before creating VkInstance, so that we can retrieve the required extensions.
+            For D3D11 and D3D12 this can be called after the device was created
+        */
+        static VRSystem* start( bool enableVSync = true );
         static VRSystem* instance() { checkInit(); return spVrSystem; }
 
 		// If you want to clean up resources and shut down the VR system, call cleanup(), which acts as
@@ -102,35 +100,38 @@ namespace Falcor
 		//     or destroys them in an inappropriate order when exiting the program.  (TODO: Debug?)
 		static void cleanup(void);
 
+        /** Initialize the display and the controllers
+        */
+        void initDisplayAndController(RenderContext::SharedPtr pRenderContext);
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Simple accessors
         //////////////////////////////////////////////////////////////////////////////////////////////////
        
         // Is the VR HMD initialized and read to render?  If false, go grab errors via getError()
-        bool isReady( void );
+        bool isReady();
 
         // Is VSync currently enabled?  (TODO: Add toggle.  But mostly you just want vSync always ON.)
-        bool isVSyncEnabled( void ) const { return mVSyncEnabled; }
-
+        bool isVSyncEnabled() const { return mVSyncEnabled; }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Basic wrapper usage methods
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Query the HMD for the current position of tracked devices
-        void refreshTracking( void );
+        void refreshTracking();
 
         // Poll for events (device [de]activate, button presses, etc).  Returns true if event(s) occurs.
         //     Updates internal state (i.e., in the HMD, controller, tracker classes) to reflect these events
-        bool pollEvents( void );
+        bool pollEvents();
+
+        // Refresh the HMD. This is just a wrapper which calls refreshTracking() and pollEvents()
+        void refresh();
 
         // Submit rendered frames to the HMD.  Should submit one image to left eye and one to right eye 
         //     each frame.  The submit() routines handle all warping due to lens and color distortions.
-        //     Can either pass in explicit texture, or an FBO (and it will pull colorTexture(0) from FBO).
         //     Size of each texture should be:  getHMD()->getRecommendedRenderSize() for best results.
-        bool submit( VRDisplay::Eye whichEye, Texture::SharedConstPtr displayTex, RenderContext* pRenderCtx);
-        bool submit( VRDisplay::Eye whichEye, Fbo::SharedConstPtr displayFbo, RenderContext* pRenderCtx);
+        bool submit( VRDisplay::Eye whichEye, const Texture::SharedConstPtr& pDisplayTex, RenderContext* pRenderCtx);
 
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +139,7 @@ namespace Falcor
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Get our head mounted display object.  Includes rendering matrices and target size.
-        VRDisplay::SharedPtr    getHMD( void ) { return mDisplay; }
+        VRDisplay::SharedPtr    getHMD() { return mDisplay; }
 
         // Get our controller(s).  Includes position, button state, aim, etc.
         VRController::SharedPtr getController( uint32_t idx ) { return (idx < 2) ? mControllers[idx] : nullptr; }
@@ -147,7 +148,7 @@ namespace Falcor
         VRTrackerBox::SharedPtr getTracker( uint32_t idx ) { return (idx < 2) ? mTracker[idx] : nullptr; }
 
         // Get information about our room/play area.
-        VRPlayArea::SharedPtr   getPlayArea( void ) { return mPlayArea; }
+        VRPlayArea::SharedPtr   getPlayArea() { return mPlayArea; }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Access renderable geometry.  These are shortcuts (can also be accessed through controller, hmd,
@@ -155,12 +156,12 @@ namespace Falcor
         //     not built-in model for them.
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        Model::SharedPtr getControllerModel( void ) { return mpControlModel; }
-        Model::SharedPtr getTrackerModel( void ) { return mpLighthouseModel; }
-        Model::SharedPtr getHMDModel( void ) { return mpHMDModel; }
+        Model::SharedPtr getControllerModel() { return mpControlModel; }
+        Model::SharedPtr getTrackerModel() { return mpLighthouseModel; }
+        Model::SharedPtr getHMDModel() { return mpHMDModel; }
 
         // This is an extra, added by Chris, for a simple xyz axis model for controllers.
-        Model::SharedPtr getAxesModel( void ) { return mpAxisModel; }
+        Model::SharedPtr getAxesModel() { return mpAxisModel; }
 
         // Gets a very simple Falcor model representing the HMD's lens distortion.
         //    -> AttirbuteLocation 'Position' is position.  2 components directly representing NDC.
@@ -191,6 +192,10 @@ namespace Falcor
         //////////////////////////////////////////////////////////////////////////////////////////////////
         bool getTimeSinceLastVsync(float *pfSecondsSinceLastVsync, uint64_t *pulFrameCounter);
 
+#ifdef FALCOR_VK
+        static std::vector<std::string> getRequiredVkInstanceExtensions();
+        static std::vector<std::string> getRequiredVkDeviceExtensions(VkPhysicalDevice device);
+#endif
     private:
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // Declare private stuff..
@@ -225,7 +230,7 @@ namespace Falcor
         vr::TrackedDevicePose_t *mDevicePoses = nullptr;
 
         // Some experimental display stuff concerning the HMD's image distortion 
-        void createDistortionVBO( void );
+        void createDistortionVBO();
 
         // Our sub-classes that store state for controllers, hmds, trackers, and the play area
         VRController::SharedPtr mControllers[2];

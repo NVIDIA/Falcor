@@ -125,4 +125,6 @@ namespace Falcor
         infoLog[pBlob->GetBufferSize()] = 0;
         return std::string(infoLog.data());
     }
+
+#define appendShaderExtension(_a)  _a ".hlsl"
 }

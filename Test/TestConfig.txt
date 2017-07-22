@@ -1,6 +1,7 @@
 {
-    \\netapp-wa02\public\Falcor\ReferenceResultsHub\, Test, TestList.txt, https://github.com/NVIDIA/Falcor.git, C:\FalcorDest, master
+    \\netapp-wa02\public\Falcor\VulkanReferenceResultsHub\, Test, TestListD3D12.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorD3D12, ref_branch
 }
+
 {
-    \\netapp-wa02\public\Falcor\ReferenceResultsLab\, Test, TestList.txt, https://gtl-gitlab.nvidia.com/NVResearch/Falcor.git, C:\FalcorDestLab, master
+    \\netapp-wa02\public\Falcor\VulkanReferenceResultsHub\, Test, TestListVK.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorVulkan, ref_branch
 }

@@ -69,6 +69,8 @@ namespace Falcor
         */
         enum class State : uint32_t
         {
+            Undefined,
+            PreInitialized,
             Common,
             VertexBuffer,
             ConstantBuffer,
@@ -108,7 +110,7 @@ namespace Falcor
         /** Get the resource type
         */
         Type getType() const { return mType; }
-        
+
         /** Get the API handle
         */
         ApiHandle getApiHandle() const { return mApiHandle; }
@@ -144,7 +146,7 @@ namespace Falcor
 
         struct ViewInfoHashFunc
         {
-            std::size_t operator()(const ShaderResourceView::ViewInfo& v) const
+            std::size_t operator()(const ResourceViewInfo& v) const
             {
                 return ((std::hash<uint32_t>()(v.firstArraySlice)
                     ^ (std::hash<uint32_t>()(v.arraySize) << 1)) >> 1)
@@ -164,13 +166,13 @@ namespace Falcor
 
         Type mType;
         BindFlags mBindFlags;
-        mutable State mState = State::Common;
+        mutable State mState = State::Undefined;
         ApiHandle mApiHandle;
 
-        mutable std::unordered_map<ShaderResourceView::ViewInfo, ShaderResourceView::SharedPtr, ViewInfoHashFunc> mSrvs;
-        mutable std::unordered_map<RenderTargetView::ViewInfo, RenderTargetView::SharedPtr, ViewInfoHashFunc> mRtvs;
-        mutable std::unordered_map<DepthStencilView::ViewInfo, DepthStencilView::SharedPtr, ViewInfoHashFunc> mDsvs;
-        mutable std::unordered_map<UnorderedAccessView::ViewInfo, UnorderedAccessView::SharedPtr, ViewInfoHashFunc> mUavs;
+        mutable std::unordered_map<ResourceViewInfo, ShaderResourceView::SharedPtr, ViewInfoHashFunc> mSrvs;
+        mutable std::unordered_map<ResourceViewInfo, RenderTargetView::SharedPtr, ViewInfoHashFunc> mRtvs;
+        mutable std::unordered_map<ResourceViewInfo, DepthStencilView::SharedPtr, ViewInfoHashFunc> mDsvs;
+        mutable std::unordered_map<ResourceViewInfo, UnorderedAccessView::SharedPtr, ViewInfoHashFunc> mUavs;
     };
 
     enum_class_operators(Resource::BindFlags);
