@@ -16,9 +16,9 @@ SamplerState gSampler;
 
 
 // Catmull-Rom filtering code from http://vec3.ca/bicubic-filtering-in-fewer-taps/
-float3 bicubicSampleCatmullRom(Texture2D tex, SamplerState samp, float2 samplePos, float2 textureSize)
+float3 bicubicSampleCatmullRom(Texture2D tex, SamplerState samp, float2 samplePos, float2 texDim)
 {
-    float2 invTextureSize = 1.0 / textureSize;
+    float2 invTextureSize = 1.0 / texDim;
     float2 tc = floor(samplePos - 0.5) + 0.5;
     float2 f = samplePos - tc;
     float2 f2 = f * f;
@@ -57,11 +57,11 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
                               int2( 1,  0), int2( 0, -1), 
                               int2( 0,  1), int2(-1,  0), };
     
-    uint2 textureSize;
+    uint2 texDim;
     uint levels;
-    gTexColor.GetDimensions(0, textureSize.x, textureSize.y, levels);
+    gTexColor.GetDimensions(0, texDim.x, texDim.y, levels);
 
-    const float2 pos = texC * textureSize;
+    const float2 pos = texC * texDim;
     const int2 ipos = int2(pos);
 
     // Fetch the current pixel color and compute the color bounding box
@@ -98,7 +98,7 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
     }
 
     // Use motion vector to fetch previous frame color (history)
-    float3 history = bicubicSampleCatmullRom(gTexPrevColor, gSampler, (texC + motion) * textureSize, textureSize);
+    float3 history = bicubicSampleCatmullRom(gTexPrevColor, gSampler, (texC + motion) * texDim, texDim);
 
     history = RGBToYCgCo(history);
 

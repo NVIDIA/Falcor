@@ -4,7 +4,7 @@
 #include "TAA.h"
 namespace Falcor
 {
-    static const char* kShaderFilename = "Effects\\TAA.ps.hlsl";
+    static const char* kShaderFilename = "Effects\\TAA.ps.slang";
 
     TemporalAA::~TemporalAA() = default;
 

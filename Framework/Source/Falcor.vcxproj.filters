@@ -2264,7 +2264,7 @@
     <None Include="Data\Framework\Shaders\FullScreenPass.gs.glsl">
       <Filter>Data\Framework\Shaders</Filter>
     </None>
-    <None Include="Data\Effects\TAA.ps.hlsl">
+    <None Include="Data\Effects\TAA.ps.slang">
       <Filter>Data\Effects</Filter>
     </None>
   </ItemGroup>
