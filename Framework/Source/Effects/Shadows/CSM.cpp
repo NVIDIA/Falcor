@@ -601,8 +601,18 @@ namespace Falcor
     void CascadedShadowMaps::executeDepthPass(RenderContext* pCtx, const Camera* pCamera)
     {
         // Must have an FBO attached, otherwise don't know the size of the depth map
-        uint32_t width = pCtx->getGraphicsState()->getFbo()->getWidth();
-        uint32_t height = pCtx->getGraphicsState()->getFbo()->getHeight();
+		const auto& pStateFbo = pCtx->getGraphicsState()->getFbo();
+		uint32_t width, height;
+		if(pStateFbo)
+		{
+			width = pStateFbo->getWidth();
+			height = pStateFbo->getHeight();
+		}
+		else
+		{
+			width = (uint32_t)mShadowPass.mapSize.x;
+			height = (uint32_t)mShadowPass.mapSize.y;
+		}
 
         Fbo::SharedConstPtr pFbo = mDepthPass.pState->getFbo();
         if((pFbo == nullptr) || (pFbo->getWidth() != width) || (pFbo->getHeight() != height))

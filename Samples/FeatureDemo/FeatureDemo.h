@@ -43,6 +43,7 @@ public:
 
 private:
     Fbo::SharedPtr mpMainFbo;
+	Fbo::SharedPtr mpDepthPassFbo;
     Fbo::SharedPtr mpResolveFbo;
     Fbo::SharedPtr mpPostProcessFbo;
 
@@ -67,7 +68,14 @@ private:
     {
         GraphicsVars::SharedPtr pVars;
         GraphicsProgram::SharedPtr pProgram;
-    } mLightingPass;
+		DepthStencilState::SharedPtr pDsState;
+	} mLightingPass;
+
+	struct
+	{
+		GraphicsVars::SharedPtr pVars;
+		GraphicsProgram::SharedPtr pProgram;
+	} mDepthPass;
 
 
     //  The Temporal Anti-Aliasing Pass.
@@ -110,6 +118,7 @@ private:
 
     void beginFrame();
     void endFrame();
+	void depthPass();
     void shadowPass();
     void renderSkyBox();
     void lightingPass();
@@ -122,6 +131,7 @@ private:
     void initSkyBox(const std::string& name);
     void initPostProcess();
     void initLightingPass();
+	void initDepthPass();
     void initShadowPass();
     void initSSAO();
     void initEnvMap(const std::string& name);
@@ -185,6 +195,7 @@ private:
     bool mUseCameraPath = true;
     void applyCameraPathState();
     bool mOptimizedShaders = true;
+	bool mEnableDepthPass = true;
 
     // Testing 
     void onInitializeTesting() override;

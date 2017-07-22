@@ -107,6 +107,8 @@ void FeatureDemo::applyAaMode()
     }
 
     mpMainFbo = FboHelper::create2D(w, h, fboDesc);
+	mpDepthPassFbo = Fbo::create();
+	mpDepthPassFbo->attachDepthStencilTarget(mpMainFbo->getDepthStencilTexture());
 }
 
 void FeatureDemo::onGuiRender()
@@ -173,11 +175,25 @@ void FeatureDemo::onGuiRender()
             mpGui->endGroup();
         }
 
-        uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
-        if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
-        {
-            setSceneSampler(maxAniso);
-        }
+		if(mpGui->beginGroup("Renderer Settings"))
+		{
+			mpGui->addCheckBox("Depth Pass", mEnableDepthPass);
+			mpGui->addTooltip("Run a depth-pass at the beginning of the frame");
+
+			if (mpGui->addCheckBox("Per-Material Shaders", mOptimizedShaders))
+			{
+				mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+			}
+			mpGui->addTooltip("Create a specialized, per-material version of the lighting program");
+
+			uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
+			if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
+			{
+				setSceneSampler(maxAniso);
+			}
+
+			mpGui->endGroup();
+		}
 
         //  Anti-Aliasing Controls.
         if (mpGui->beginGroup("Anti-Aliasing"))
