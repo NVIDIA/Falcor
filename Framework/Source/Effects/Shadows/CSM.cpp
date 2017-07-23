@@ -72,6 +72,15 @@ namespace Falcor
             return UniquePtr(new CsmSceneRenderer(pScene, alphaMapCbLoc, alphaMapLoc, alphaMapSamplerLoc)); 
         }
 
+        void setDepthClamp(bool enable) { mDepthClamp = enable; }
+
+        void renderScene(RenderContext* pContext, Camera* pCamera) override
+        {
+            pContext->getGraphicsState()->setRasterizerState(nullptr);
+            mpLastSetRs = nullptr;
+            SceneRenderer::renderScene(pContext, pCamera);
+        }
+
     protected:
         CsmSceneRenderer(const Scene::SharedConstPtr& pScene, const ProgramVars::BindLocation& alphaMapCbLoc, const ProgramVars::BindLocation& alphaMapLoc, const ProgramVars::BindLocation& alphaMapSamplerLoc) 
             : SceneRenderer(std::const_pointer_cast<Scene>(pScene))
@@ -84,6 +93,14 @@ namespace Falcor
             Sampler::Desc desc;
             desc.setFilterMode(Sampler::Filter::Linear, Sampler::Filter::Linear, Sampler::Filter::Linear);
             mpAlphaSampler = Sampler::create(desc);
+
+            RasterizerState::Desc rsDesc;
+            rsDesc.setDepthClamp(true);
+            mpDepthClampRS = RasterizerState::create(rsDesc);
+            rsDesc.setCullMode(RasterizerState::CullMode::None);
+            mpDepthClampNoCullRS = RasterizerState::create(rsDesc);
+            rsDesc.setDepthClamp(false);
+            mpNoCullRS = RasterizerState::create(rsDesc);
         }
 
         bool mMaterialChanged = false;
@@ -95,6 +112,25 @@ namespace Falcor
             ProgramVars::BindLocation alphaCB;
             ProgramVars::BindLocation alphaMapSampler;
         } mBindLocations;
+
+        bool mDepthClamp;
+        RasterizerState::SharedPtr mpDepthClampNoCullRS;
+        RasterizerState::SharedPtr mpNoCullRS;
+        RasterizerState::SharedPtr mpDepthClampRS;
+
+        RasterizerState::SharedPtr mpLastSetRs;
+
+        RasterizerState::SharedPtr getRasterizerState(const Material* pMaterial)
+        {
+            if (pMaterial->getAlphaMap())
+            {
+                return mDepthClamp ? mpDepthClampNoCullRS : mpNoCullRS;
+            }
+            else
+            {
+                return mDepthClamp ? mpDepthClampRS : nullptr;
+            }
+        }
 
         bool setPerMaterialData(const CurrentWorkingData& currentData, const Material* pMaterial) override
         {
@@ -112,7 +148,12 @@ namespace Falcor
             {
                 currentData.pContext->getGraphicsState()->getProgram()->removeDefine("TEST_ALPHA");
             }
-            
+            const auto& pRsState = getRasterizerState(currentData.pMaterial);
+            if(pRsState != mpLastSetRs)
+            {
+                currentData.pContext->getGraphicsState()->setRasterizerState(pRsState);
+                mpLastSetRs = pRsState;
+            }
             return true;
         };
     };
@@ -179,11 +220,6 @@ namespace Falcor
         createShadowPassResources(mapWidth, mapHeight);
 
         mpLightCamera = Camera::create();
-        RasterizerState::Desc rsDesc;
-        rsDesc.setCullMode(RasterizerState::CullMode::None);
-        mShadowPass.pNoCullRS = RasterizerState::create(rsDesc);;
-        rsDesc.setDepthClamp(true);
-        mShadowPass.pDepthClampNoCullRS = RasterizerState::create(rsDesc);
 
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(glm::vec4(1.0f));
@@ -699,15 +735,7 @@ namespace Falcor
 
         //Set shadow pass state
         mShadowPass.pState->setViewport(0, VP);
-        if (mControls.depthClamp)
-        {
-            mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampNoCullRS);
-        }
-        else
-        {
-            mShadowPass.pState->setRasterizerState(mShadowPass.pNoCullRS);
-        }
-
+        mpCsmSceneRenderer->setDepthClamp(mControls.depthClamp);
         pRenderCtx->pushGraphicsState(mShadowPass.pState);
         partitionCascades(pCamera, distanceRange);
         renderScene(pRenderCtx);

@@ -107,8 +107,6 @@ namespace Falcor
             Sampler::SharedPtr pPointCmpSampler;
             Sampler::SharedPtr pLinearCmpSampler;
             Sampler::SharedPtr pVSMTrilinearSampler;
-            RasterizerState::SharedPtr pDepthClampNoCullRS;
-            RasterizerState::SharedPtr pNoCullRS;
             GraphicsVars::SharedPtr pGraphicsVars;
             GraphicsState::SharedPtr pState;
             glm::vec2 mapSize;
