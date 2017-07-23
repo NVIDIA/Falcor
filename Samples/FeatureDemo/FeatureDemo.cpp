@@ -101,6 +101,22 @@ void FeatureDemo::setSceneSampler(uint32_t maxAniso)
     pScene->bindSamplerToModels(mpSceneSampler);
 }
 
+void FeatureDemo::applyCustomSceneVars(const Scene* pScene, const std::string& filename)
+{
+    std::string folder = getDirectoryFromFile(filename);
+    Scene::UserVariable var = pScene->getUserVariable("sky_box");
+    if (var.type == Scene::UserVariable::Type::String) initSkyBox(folder + '\\' + var.str);
+
+    var = pScene->getUserVariable("env_map");
+    if (var.type == Scene::UserVariable::Type::String) initEnvMap(folder + '\\' + var.str);
+
+    var = pScene->getUserVariable("env_map_intensity_scale");
+    if (var.type == Scene::UserVariable::Type::Double) mEnvMapFactorScale = (float)var.d64;
+
+    var = pScene->getUserVariable("opacity_scale");
+    if (var.type == Scene::UserVariable::Type::Double) mOpacityScale = (float)var.d64;
+}
+
 void FeatureDemo::initScene(Scene::SharedPtr pScene)
 {
     if (pScene->getCameraCount() == 0)
@@ -176,6 +192,7 @@ void FeatureDemo::loadScene(const std::string& filename, bool showProgressBar)
     if (pScene != nullptr)
     {
         initScene(pScene);
+        applyCustomSceneVars(pScene.get(), filename);
     }
 }
 

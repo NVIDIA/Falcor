@@ -172,7 +172,7 @@ namespace Falcor
         void addUserVariable(const std::string& name, const UserVariable& var) { mUserVars[name] = var; }
         
         // If the name is not found, returns an invalid var (Type == Unknown)
-        const UserVariable& getUserVariable(const std::string& name);
+        const UserVariable& getUserVariable(const std::string& name) const;
         const UserVariable& getUserVariable(uint32_t varID, std::string& varName) const;
         uint32_t getUserVariableCount() const { return (uint32_t)mUserVars.size(); }
 

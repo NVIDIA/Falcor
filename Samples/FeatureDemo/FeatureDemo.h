@@ -152,9 +152,10 @@ private:
     void loadModel(const std::string& filename, bool showProgressBar);
     void loadScene(const std::string& filename, bool showProgressBar);
     void initScene(Scene::SharedPtr pScene);
+    void applyCustomSceneVars(const Scene* pScene, const std::string& filename);
+
     void setActiveCameraAspectRatio();
     void setSceneSampler(uint32_t maxAniso);
-
 
     Texture::SharedPtr mpEnvMap;
     Sampler::SharedPtr mpSceneSampler;
@@ -199,7 +200,6 @@ private:
     uint32_t mMSAASampleCount = 4;
     SamplePattern mTAASamplePattern = SamplePattern::Halton;
     void applyAaMode();
-    
     std::vector<ProgramControl> mControls;
     void applyLightingProgramControl(ControlID controlID);
 

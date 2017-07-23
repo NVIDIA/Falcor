@@ -215,7 +215,7 @@ namespace Falcor
         mExtentsDirty = true;
     }
 
-    const Scene::UserVariable& Scene::getUserVariable(const std::string& name)
+    const Scene::UserVariable& Scene::getUserVariable(const std::string& name) const
     {
         const auto& a = mUserVars.find(name);
         if (a == mUserVars.end())
