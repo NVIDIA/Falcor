@@ -328,6 +328,29 @@ namespace Falcor
         slangFlags |= SLANG_COMPILE_FLAG_NO_CHECKING;
         spSetCompileFlags(slangRequest, slangFlags);
 
+        // Enable this block to disable the emission of `#line` directives
+        // and hopefully make the HLSL/GLSL output by Slang a bit more
+        // readable.
+        //
+        // This is useful for diagnosing issues where Slang outputs bogus
+        // code and you need to isolate what Slang is doing wrong.
+        //
+        // This is way less useful if the user's code has a legitimate
+        // issue in it, because it will be reported at a location
+        // unrelated to the code they wrote. That is why it is off by default.
+#if FALCOR_SLANG_DISABLE_LINE_DIRECTIVES
+        spSetLineDirectiveMode(slangRequest, SLANG_LINE_DIRECTIVE_MODE_NONE);
+#endif
+
+        // Enable this block to make Slang dump intermediate HLSL/GLSL
+        // and DXBC/SPIR-V (both binary and assembly) for every shader
+        // it compiles. These will be dumped to the current working
+        // directory and named `slang-dump-*.{glsl,hlsl,spv,dxbc,spv.asm,dxbc.asm}
+#if FALCOR_SLANG_DUMP_COMPILER_INTERMEDIATES
+        spSetDumpIntermediates(slangRequest, true);
+#endif
+
+
         // Now lets add all our input shader code, one-by-one
         int translationUnitsAdded = 0;
         for(auto source : mDesc.mSources)

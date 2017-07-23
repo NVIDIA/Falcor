@@ -28,3 +28,7 @@ Framework/Externals/slang/source/**/*.natvis
 !Framework/Externals/slang/source/**/*.cpp
 !Framework/Externals/slang/source/**/*.cpp
 !Framework/Externals/slang/source/**/*.h
+
+# Ignore intermediate files that Slang dumps when
+# we ask it to preserve intermedites
+slang-dump*
