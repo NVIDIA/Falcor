@@ -54,6 +54,7 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
     result.finalValue = 0;
     float4 finalColor = 0;
     float envMapFactor = 1;
+    float opacity = getDiffuseColor(shAttr).a;
 
     [unroll]
     for (uint l = 0; l < _LIGHT_COUNT; l++)
@@ -63,6 +64,7 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
         if (l == 0)
         {
             shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy / vOut.vsData.posH.w);
+            shadowFactor *= opacity;
             envMapFactor -= 1 - shadowFactor;
         }
 #endif
@@ -70,6 +72,7 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
     }
 
     finalColor = float4(result.finalValue, 1.f);
+    finalColor.a = opacity * 0.3;
 
 #ifdef _ENABLE_REFLECTIONS
     // Calculate the view vector
@@ -88,7 +91,7 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
 
     // add ambient
     finalColor.rgb += gAmbientLighting * getDiffuseColor(shAttr).rgb;
-    
+
     psOut.color = finalColor;
     psOut.normal = float4(vOut.vsData.normalW * 0.5f + 0.5f, 1.0f);
 

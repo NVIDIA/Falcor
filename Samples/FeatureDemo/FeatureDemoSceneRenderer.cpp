@@ -30,9 +30,12 @@
 static bool isMaterialTransparent(const Material* pMaterial)
 {
     if (pMaterial->getAlphaMap()) return true;
-    // If we have a transparent material, the first layer will be diffuse with alpha != 0
-    const auto& layer = pMaterial->getLayer(0);
-    if (layer.type == Material::Layer::Type::Lambert && layer.albedo.a < 1.0f) return true;
+
+    for (uint32_t i = 0; i < pMaterial->getNumLayers(); i++)
+    {
+        const auto& layer = pMaterial->getLayer(i);
+        if (layer.type == Material::Layer::Type::Lambert && layer.albedo.a < 1.0f) return true;
+    }
     return false;
 }
 

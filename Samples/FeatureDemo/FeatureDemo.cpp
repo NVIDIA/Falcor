@@ -268,11 +268,12 @@ void FeatureDemo::depthPass()
 		return;
 	}
 
-    mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::All);
     mpState->setFbo(mpDepthPassFbo);
 	mpState->setProgram(mDepthPass.pProgram);
 	mpRenderContext->setGraphicsVars(mDepthPass.pVars);
-	mpSceneRenderer->renderScene(mpRenderContext.get());
+    
+    mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::Opaque);
+    mpSceneRenderer->renderScene(mpRenderContext.get());
 }
 
 void FeatureDemo::lightingPass()

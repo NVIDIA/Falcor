@@ -180,8 +180,10 @@ namespace Falcor
 
         mpLightCamera = Camera::create();
         RasterizerState::Desc rsDesc;
+        rsDesc.setCullMode(RasterizerState::CullMode::None);
+        mShadowPass.pNoCullRS = RasterizerState::create(rsDesc);;
         rsDesc.setDepthClamp(true);
-        mShadowPass.pDepthClampRS = RasterizerState::create(rsDesc);
+        mShadowPass.pDepthClampNoCullRS = RasterizerState::create(rsDesc);
 
         Sampler::Desc samplerDesc;
         samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point).setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border).setBorderColor(glm::vec4(1.0f));
@@ -699,11 +701,11 @@ namespace Falcor
         mShadowPass.pState->setViewport(0, VP);
         if (mControls.depthClamp)
         {
-            mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampRS);
+            mShadowPass.pState->setRasterizerState(mShadowPass.pDepthClampNoCullRS);
         }
         else
         {
-            mShadowPass.pState->setRasterizerState(nullptr);
+            mShadowPass.pState->setRasterizerState(mShadowPass.pNoCullRS);
         }
 
         pRenderCtx->pushGraphicsState(mShadowPass.pState);
