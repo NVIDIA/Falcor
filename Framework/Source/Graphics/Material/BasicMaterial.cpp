@@ -53,7 +53,7 @@ namespace Falcor
                 albedo = glm::vec3(1.f);
             }
 
-            layer.albedo = glm::vec4(albedo, 1.f);
+            layer.albedo = glm::vec4(albedo, opacity);
             layer.pTexture = pTextures[MapType::DiffuseMap];
             pMaterial->addLayer(layer);
         }

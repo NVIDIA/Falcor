@@ -25,23 +25,31 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
-__import ShaderCommon;
-__import DefaultVS;
-__import Effects.CascadedShadowMap;
-#include "VertexAttrib.h"
+#pragma once
+#include "Falcor.h"
 
-layout(binding = 0) cbuffer PerFrameCB : register(b0)
-{
-	float3 gAmbient;
-    float gEnvMapFactorScale;
-    CsmData gCsmData;
-    float4x4 camVpAtLastCsmUpdate;
-    float2 gRenderTargetDim;
-    float gOpacityScale;
-};
+using namespace Falcor;
 
-struct MainVsOut
+class FeatureDemoSceneRenderer : public SceneRenderer
 {
-    VS_OUT vsData;
-    float shadowsDepthC : DEPTH;
+public:
+    using SharedPtr = std::shared_ptr<FeatureDemoSceneRenderer>;
+    ~FeatureDemoSceneRenderer() = default;
+    enum class Mode
+    {
+        All,
+        Opaque,
+        Transparent
+    };
+
+    static SharedPtr create(const Scene::SharedPtr& pScene);
+    void setRenderMode(Mode renderMode) { mRenderMode = renderMode; }
+    void renderScene(RenderContext* pContext) override;
+private:
+    bool setPerMeshData(const CurrentWorkingData& currentData, const Mesh* pMesh) override;
+    FeatureDemoSceneRenderer(const Scene::SharedPtr& pScene);
+    std::vector<bool> mTransparentMeshes;
+    Mode mRenderMode = Mode::All;
+    bool mHasOpaqueObjects = false;
+    bool mHasTransparentObject = false;
 };
