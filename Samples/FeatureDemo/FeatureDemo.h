@@ -28,6 +28,7 @@
 #pragma once
 #include "Falcor.h"
 #include "SampleTest.h"
+#include "FeatureDemoSceneRenderer.h"
 
 using namespace Falcor;
 
@@ -69,6 +70,8 @@ private:
         GraphicsVars::SharedPtr pVars;
         GraphicsProgram::SharedPtr pProgram;
 		DepthStencilState::SharedPtr pDsState;
+        RasterizerState::SharedPtr pNoCullRS;
+        BlendState::SharedPtr pAlphaBlendBS;
 	} mLightingPass;
 
 	struct
@@ -128,6 +131,11 @@ private:
     void postProcess();
     void ambientOcclusion();
 
+
+    void renderOpaqueObjects();
+    void renderTransparentObjects();
+
+
     void initSkyBox(const std::string& name);
     void initPostProcess();
     void initLightingPass();
@@ -140,7 +148,7 @@ private:
     void initControls();
 
     GraphicsState::SharedPtr mpState;
-    SceneRenderer::SharedPtr mpSceneRenderer;
+    FeatureDemoSceneRenderer::SharedPtr mpSceneRenderer;
     void loadModel(const std::string& filename, bool showProgressBar);
     void loadScene(const std::string& filename, bool showProgressBar);
     void initScene(Scene::SharedPtr pScene);

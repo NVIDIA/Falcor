@@ -13,9 +13,11 @@
   <ItemGroup>
     <ClCompile Include="FeatureDemo.cpp" />
     <ClCompile Include="FeatureDemoControls.cpp" />
+    <ClCompile Include="FeatureDemoSceneRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FeatureDemo.h" />
+    <ClInclude Include="FeatureDemoSceneRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Framework\Source\Falcor.vcxproj">

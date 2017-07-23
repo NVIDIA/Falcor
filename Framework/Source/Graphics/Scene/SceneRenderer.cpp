@@ -210,7 +210,10 @@ namespace Falcor
         // Bind material
         if(mpLastMaterial != pMesh->getMaterial().get())
         {
-            setPerMaterialData(currentData, currentData.pMaterial);
+            if (setPerMaterialData(currentData, currentData.pMaterial) == false)
+            {
+                return;
+            }
             mpLastMaterial = pMesh->getMaterial().get();
 
             if(mCompileMaterialWithProgram)

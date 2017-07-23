@@ -59,9 +59,18 @@ void FeatureDemo::initLightingPass()
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
     initControls();
     mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
-	DepthStencilState::Desc dsDesc;
+	
+    DepthStencilState::Desc dsDesc;
 	dsDesc.setDepthTest(true).setStencilTest(false).setDepthWriteMask(false).setDepthFunc(DepthStencilState::Func::LessEqual);
 	mLightingPass.pDsState = DepthStencilState::create(dsDesc);
+
+    RasterizerState::Desc rsDesc;
+    rsDesc.setCullMode(RasterizerState::CullMode::None);
+    mLightingPass.pNoCullRS = RasterizerState::create(rsDesc);
+
+    BlendState::Desc bsDesc;
+    bsDesc.setRtBlend(0, true).setRtParams(0, BlendState::BlendOp::Add, BlendState::BlendOp::Add, BlendState::BlendFunc::SrcAlpha, BlendState::BlendFunc::OneMinusSrcAlpha, BlendState::BlendFunc::One, BlendState::BlendFunc::Zero);
+    mLightingPass.pAlphaBlendBS = BlendState::create(bsDesc);
 }
 
 void FeatureDemo::initShadowPass()
@@ -123,7 +132,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
         pScene->setAmbientIntensity(vec3(0.1f));
     }
 
-    mpSceneRenderer = SceneRenderer::create(pScene);
+    mpSceneRenderer = FeatureDemoSceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
     mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
     setSceneSampler(mpSceneSampler ? mpSceneSampler->getMaxAnisotropy() : 4);
@@ -138,6 +147,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
 void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 {
+    Mesh::resetGlobalIdCounter();
     mpSceneRenderer = nullptr;
     ProgressBar::SharedPtr pBar;
     if (showProgressBar)
@@ -154,6 +164,7 @@ void FeatureDemo::loadModel(const std::string& filename, bool showProgressBar)
 
 void FeatureDemo::loadScene(const std::string& filename, bool showProgressBar)
 {
+    Mesh::resetGlobalIdCounter();
     mpSceneRenderer = nullptr;
     ProgressBar::SharedPtr pBar;
     if (showProgressBar)
@@ -257,7 +268,8 @@ void FeatureDemo::depthPass()
 		return;
 	}
 
-	mpState->setFbo(mpDepthPassFbo);
+    mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::All);
+    mpState->setFbo(mpDepthPassFbo);
 	mpState->setProgram(mDepthPass.pProgram);
 	mpRenderContext->setGraphicsVars(mDepthPass.pVars);
 	mpSceneRenderer->renderScene(mpRenderContext.get());
@@ -290,9 +302,26 @@ void FeatureDemo::lightingPass()
         pCB["gRenderTargetDim"] = glm::vec2(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
     }
 
-    mpSceneRenderer->renderScene(mpRenderContext.get());
+    renderOpaqueObjects();
+    renderTransparentObjects();
 	mpRenderContext->flush();
 	mpState->setDepthStencilState(nullptr);
+}
+
+void FeatureDemo::renderOpaqueObjects()
+{
+    mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::Opaque);
+    mpSceneRenderer->renderScene(mpRenderContext.get());
+}
+
+void FeatureDemo::renderTransparentObjects()
+{
+    mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::Transparent);
+    mpState->setBlendState(mLightingPass.pAlphaBlendBS);
+    mpState->setRasterizerState(mLightingPass.pNoCullRS);
+    mpSceneRenderer->renderScene(mpRenderContext.get());
+    mpState->setBlendState(nullptr);
+    mpState->setRasterizerState(nullptr);
 }
 
 void FeatureDemo::resolveMSAA()
