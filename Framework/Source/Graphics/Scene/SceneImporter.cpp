@@ -194,7 +194,7 @@ namespace Falcor
         auto pModel = Model::createFromFile(file.c_str(), mModelLoadFlags);
         if(pModel == nullptr)
         {
-            return false;
+            return error("Could not load model: " + file);
         }
 
         pModel->setFilename(modelFile.GetString());
@@ -466,7 +466,12 @@ namespace Falcor
         }
 
         pTexture = createTextureFromFile(filename, true, isSrgb);
-        return (pTexture != nullptr);
+        if (pTexture == nullptr)
+        {
+            return error("Could not load texture: " + filename);
+        }
+
+        return true;
     }
 
     bool SceneImporter::createMaterialLayer(const rapidjson::Value& jsonLayer, Material::Layer& layerOut)
@@ -518,7 +523,7 @@ namespace Falcor
                 bOK = false;
                 error("Invalid key found in material layers section. Key == " + key + ".");
             }
-    }
+        }
 
         return bOK;
     }
