@@ -54,7 +54,10 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
     result.finalValue = 0;
     float4 finalColor = 0;
     float envMapFactor = 1;
-    float opacity = getDiffuseColor(shAttr).a;
+    float opacity = 1;
+#ifdef _ENABLE_TRANSPARENCY
+    opacity = getDiffuseColor(shAttr).a;
+#endif
 
     [unroll]
     for (uint l = 0; l < _LIGHT_COUNT; l++)
@@ -72,7 +75,9 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
     }
 
     finalColor = float4(result.finalValue, 1.f);
-    finalColor.a = opacity * 0.3;
+#ifdef _ENABLE_TRANSPARENCY
+    finalColor.a = opacity * gOpacityScale;
+#endif
 
 #ifdef _ENABLE_REFLECTIONS
     // Calculate the view vector

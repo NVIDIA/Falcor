@@ -272,7 +272,8 @@ void FeatureDemo::depthPass()
 	mpState->setProgram(mDepthPass.pProgram);
 	mpRenderContext->setGraphicsVars(mDepthPass.pVars);
     
-    mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::Opaque);
+    auto renderMode = mControls[EnableTransparency].enabled ? FeatureDemoSceneRenderer::Mode::Opaque : FeatureDemoSceneRenderer::Mode::All;
+    mpSceneRenderer->setRenderMode(renderMode);
     mpSceneRenderer->renderScene(mpRenderContext.get());
 }
 
@@ -284,6 +285,7 @@ void FeatureDemo::lightingPass()
     mpRenderContext->setGraphicsVars(mLightingPass.pVars);
     ConstantBuffer::SharedPtr pCB = mLightingPass.pVars->getConstantBuffer("PerFrameCB");
     pCB["gEnvMapFactorScale"] = mEnvMapFactorScale;
+    pCB["gOpacityScale"] = mOpacityScale;
 
     if (mControls[ControlID::EnableShadows].enabled)
     {
@@ -303,8 +305,16 @@ void FeatureDemo::lightingPass()
         pCB["gRenderTargetDim"] = glm::vec2(mpDefaultFBO->getWidth(), mpDefaultFBO->getHeight());
     }
 
-    renderOpaqueObjects();
-    renderTransparentObjects();
+    if(mControls[EnableTransparency].enabled)
+    {
+        renderOpaqueObjects();
+        renderTransparentObjects();
+    }
+    else
+    {
+        mpSceneRenderer->setRenderMode(FeatureDemoSceneRenderer::Mode::All);
+        mpSceneRenderer->renderScene(mpRenderContext.get());
+    }
 	mpRenderContext->flush();
 	mpState->setDepthStencilState(nullptr);
 }

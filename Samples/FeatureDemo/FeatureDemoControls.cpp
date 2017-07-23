@@ -50,6 +50,7 @@ void FeatureDemo::initControls()
     mControls[ControlID::EnableShadows] = { true, false, "_ENABLE_SHADOWS" };
     mControls[ControlID::EnableReflections] = { true, false, "_ENABLE_REFLECTIONS" };
     mControls[ControlID::EnableHashedAlpha] = { true, true, "_DEFAULT_ALPHA_TEST" };
+    mControls[ControlID::EnableTransparency] = { false, false, "_ENABLE_TRANSPARENCY" };
     mControls[ControlID::EnableSSAO] = { false, false, "" };
 
     for (uint32_t i = 0 ; i < ControlID::Count ; i++)
@@ -136,6 +137,16 @@ void FeatureDemo::onGuiRender()
 
     if (mpSceneRenderer)
     {
+
+        if (mpGui->addButton("Load SkyBox Texture"))
+        {
+            std::string filename;
+            if (openFileDialog(kImageFileString, filename))
+            {
+                initSkyBox(filename);
+            }
+        }
+
         if(mpGui->beginGroup("Scene Settings"))
         {
             Scene* pScene = mpSceneRenderer->getScene();
@@ -264,15 +275,6 @@ void FeatureDemo::onGuiRender()
             mpGui->endGroup();
         }
 
-        if (mpGui->addButton("Load SkyBox Texture"))
-        {
-            std::string filename;
-            if (openFileDialog(kImageFileString, filename))
-            {
-                initSkyBox(filename);
-            }
-        }
-
         mpToneMapper->renderUI(mpGui.get(), "Tone-Mapping");
 
         if (mpGui->beginGroup("Shadows"))
@@ -291,11 +293,25 @@ void FeatureDemo::onGuiRender()
 
         if (mpGui->beginGroup("SSAO"))
         {
-            mpGui->addCheckBox("Enable SSAO", mControls[ControlID::EnableSSAO].enabled);
+            if (mpGui->addCheckBox("Enable SSAO", mControls[ControlID::EnableSSAO].enabled))
+            {
+                applyLightingProgramControl(ControlID::EnableSSAO);
+            }
+
             if (mControls[ControlID::EnableSSAO].enabled)
             {
                 mSSAO.pSSAO->renderGui(mpGui.get());
             }
+            mpGui->endGroup();
+        }
+
+        if (mpGui->beginGroup("Transparency"))
+        {
+            if (mpGui->addCheckBox("Enable Transparency", mControls[ControlID::EnableTransparency].enabled))
+            {
+                applyLightingProgramControl(ControlID::EnableTransparency);
+            }
+            mpGui->addFloatVar("Opacity Scale", mOpacityScale, 0, 1);
             mpGui->endGroup();
         }
 
