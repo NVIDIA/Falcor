@@ -176,6 +176,7 @@ private:
         EnableSSAO,
         EnableHashedAlpha,
         EnableTransparency,
+        VisualizeCascades,
         Count
     };
 

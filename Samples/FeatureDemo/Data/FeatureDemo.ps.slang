@@ -104,5 +104,8 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
     psOut.motion = calcMotionVector(pixelCrd.xy, vOut.vsData.prevPosH, gRenderTargetDim);
 #endif
 
+#if defined(_VISUALIZE_CASCADES) && defined(_ENABLE_SHADOWS)
+    psOut.color.rgb *= getBlendedCascadeColor(gCsmData, vOut.shadowsDepthC);
+#endif
     return psOut;
 }

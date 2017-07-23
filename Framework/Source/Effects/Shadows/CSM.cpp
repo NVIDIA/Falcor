@@ -709,6 +709,7 @@ namespace Falcor
         if(mControls.useMinMaxSdsm)
         {
             reduceDepthSdsmMinMax(pRenderCtx, pCamera, pDepthBuffer, distanceRange);
+            distanceRange.x *= 0.9f;
         }
         else
         {

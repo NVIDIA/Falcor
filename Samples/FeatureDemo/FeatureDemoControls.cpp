@@ -52,6 +52,7 @@ void FeatureDemo::initControls()
     mControls[ControlID::EnableHashedAlpha] = { true, true, "_DEFAULT_ALPHA_TEST" };
     mControls[ControlID::EnableTransparency] = { false, false, "_ENABLE_TRANSPARENCY" };
     mControls[ControlID::EnableSSAO] = { false, false, "" };
+    mControls[ControlID::VisualizeCascades] = { false, false, "_VISUALIZE_CASCADES" };
 
     for (uint32_t i = 0 ; i < ControlID::Count ; i++)
     {
@@ -287,6 +288,7 @@ void FeatureDemo::onGuiRender()
             {
                 mpGui->addCheckBox("Update Map", mShadowPass.updateShadowMap);
                 mShadowPass.pCsm->renderUi(mpGui.get());
+                if (mpGui->addCheckBox("Visualize Cascades", mControls[ControlID::VisualizeCascades].enabled)) applyLightingProgramControl(ControlID::VisualizeCascades);
             }
             mpGui->endGroup();
         }
