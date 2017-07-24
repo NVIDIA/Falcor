@@ -144,9 +144,9 @@ void _fn prepareShadingAttribs(MaterialData material, in float3 P, in float3 cam
 
     /* Copy the input material parameters */
 #ifdef _MS_STATIC_MATERIAL_DESC
-    const MaterialDesc desc = _MS_STATIC_MATERIAL_DESC;
+    MaterialDesc desc = _MS_STATIC_MATERIAL_DESC;
 #else
-    const MaterialDesc desc = material.desc;
+    MaterialDesc desc = material.desc;
 #endif
 
     shAttr.preparedMat.values = material.values;
@@ -299,8 +299,8 @@ float4 _fn evalSpecularLayer(MaterialLayerDesc desc, MaterialLayerValues data, S
     }
     
     // compute halfway vector
-    const float3 hW = normalize(shAttr.E + lAttr.L);
-    const float3 h = normalize(float3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
+    float3 hW = normalize(shAttr.E + lAttr.L);
+    float3 h = normalize(float3(dot(hW, shAttr.T), dot(hW, shAttr.B), dot(hW, shAttr.N)));
 
     result.roughness = roughness;
 
@@ -325,10 +325,10 @@ float4 _fn evalSpecularLayer(MaterialLayerDesc desc, MaterialLayerValues data, S
     value /= 4.f * dot(shAttr.E, shAttr.N);
 
     /* Fresnel conductor/dielectric term */
-    const float HoE = dot(hW, shAttr.E);
-    const float IoR = data.extraParam.x;
-    const float kappa = data.extraParam.y;
-    const float F_term = (desc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
+    float HoE = dot(hW, shAttr.E);
+    float IoR = data.extraParam.x;
+    float kappa = data.extraParam.y;
+    float F_term = (desc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
     value *= F_term;
     float weight = F_term;
 
@@ -375,8 +375,8 @@ void _fn evalMaterialLayer(int iLayer, ShadingAttribs attr, LightAttribs lAttr,
 {
     float4 value = 0;
 
-    const MaterialLayerValues values = attr.preparedMat.values.layers[iLayer];
-    const MaterialLayerDesc desc = attr.preparedMat.desc.layers[iLayer];
+    MaterialLayerValues values = attr.preparedMat.values.layers[iLayer];
+    MaterialLayerDesc desc = attr.preparedMat.desc.layers[iLayer];
     switch(desc.type)
     {
     case MatLambert: /* Diffuse BRDF */
@@ -581,7 +581,7 @@ Tries to override a diffuse albedo color for all layers within a given material
 \param[in] Material Material to look in
 returns true if succeeded
 */
-bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, const float4 albedo, const bool allLayers = true)
+bool _fn overrideDiffuseColor(_ref(ShadingAttribs) shAttr, float4 albedo, bool allLayers = true)
 {
     bool found = false;
     if(!allLayers)
@@ -660,8 +660,8 @@ void _fn sampleMaterial(
 			sampleDiffuse = false;
 
 			float3 m;
-			const float3 wo = toLocal(shAttr.E, shAttr.T, shAttr.B, shAttr.N);
-			const float2 roughness = float2(specData.roughness.x, specData.roughness.y);
+			float3 wo = toLocal(shAttr.E, shAttr.T, shAttr.B, shAttr.N);
+			float2 roughness = float2(specData.roughness.x, specData.roughness.y);
 
 			// Set the specular reflectivity
 			result.specularAlbedo = specData.albedo.rgb;
@@ -691,10 +691,10 @@ void _fn sampleMaterial(
             result.thp *= evalMicrofacetTerms(shAttr.T, shAttr.B, shAttr.N, m, shAttr.E, result.wi, roughness, specDesc.ndf, (specDesc.type) == MatDielectric);
 
 			// Fresnel conductor/dielectric term
-			const float HoE = dot(m, shAttr.E);
-			const float IoR = specData.extraParam.x;
-			const float kappa = specData.extraParam.y;
-            const float F_term = (specDesc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
+			float HoE = dot(m, shAttr.E);
+			float IoR = specData.extraParam.x;
+			float kappa = specData.extraParam.y;
+            float F_term = (specDesc.type == MatConductor) ? conductorFresnel(HoE, IoR, kappa) : 1.f - dielectricFresnel(HoE, IoR);
 			result.thp *= F_term;
 
 			result.effectiveRoughness = roughness;
