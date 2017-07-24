@@ -509,7 +509,7 @@ namespace Falcor
                 desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
                 desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // This is a color attachment
                 desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // This is a color attachment
-                desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                desc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             }
         }
@@ -529,7 +529,7 @@ namespace Falcor
             depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
             depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-            depthDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            depthDesc.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
 
