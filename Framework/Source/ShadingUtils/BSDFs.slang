@@ -46,7 +46,7 @@ Microfacet routines: Fresnel (conductor/dielectric), shadowing/masking
 /**
 Schlick's approximation for reflection of a dielectric media
 */
-float _fn dielectricFresnelSchlick(in const float VdH, in const float IoR)
+float _fn dielectricFresnelSchlick(float VdH, float IoR)
 {
     float R0 = (1.f - IoR) / (1.f + IoR);	R0 *= R0;
     const float OneMinusCos = 1.f - VdH;
@@ -58,7 +58,7 @@ float _fn dielectricFresnelSchlick(in const float VdH, in const float IoR)
 Simplified Fresnel factor (w/o polarization) of a planar interface
 between two dielectrics
 */
-float _fn dielectricFresnelFast(in const float NdE, in const float NdL, in const float IoR)
+float _fn dielectricFresnelFast(float NdE, float NdL, float IoR)
 {
     const float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Transmitted-to-incident wave ratio, perpendicular component
     const float Rp = (IoR * NdE - NdL) / (IoR * NdE + NdL);	// Transmitted-to-incident wave ratio, parallel component
@@ -69,7 +69,7 @@ float _fn dielectricFresnelFast(in const float NdE, in const float NdL, in const
 Full Fresnel factor (w/o polarization) of a planar interface
 between two dielectrics
 */
-float _fn dielectricFresnel(in float NdE, in const float IoR)
+float _fn dielectricFresnel(in float NdE, float IoR)
 {
     const float realIoR = (NdE >= 0.f) ? 1.f / IoR : IoR;
     // Perform a refraction
@@ -87,7 +87,7 @@ float _fn dielectricFresnel(in float NdE, in const float IoR)
 Full Fresnel factor (w/o polarization) of a planar interface
 between a dielectric (usually air) and a conductive media
 */
-float _fn conductorFresnel(in float NdE, in const float IoR, in const float Kappa)
+float _fn conductorFresnel(in float NdE, float IoR, float Kappa)
 {
     const float Kappa2 = Kappa * Kappa;
     const float TotalIoR2 = IoR * IoR + Kappa2;	// Total magnitude of IoR: Real plus complex parts of IoR
@@ -106,7 +106,7 @@ Distribution functions
 /*******************************************************************************************
 Lambertian diffuse BSDF. Returns a clamped N.L factor.
 */
-float _fn evalDiffuseBSDF(in const float3 shadeNormal, in const float3 lightDir)
+float _fn evalDiffuseBSDF(float3 shadeNormal, float3 lightDir)
 {
     return max(0.f, dot(shadeNormal, lightDir)) * M_1_PIf;
 }
@@ -126,7 +126,7 @@ float _fn evalPhongDistribution(in float3 N, in float3 V, in float3 L, in float 
 /*******************************************************************************************
 Beckmann normal distribution function (NDF).
 */
-float _fn evalBeckmannDistribution(in const float3 N, in const float3 H, in float roughness)
+float _fn evalBeckmannDistribution(float3 N, float3 H, in float roughness)
 {
     const float a2 = roughness * roughness;
     // dot products that we need
@@ -137,7 +137,7 @@ float _fn evalBeckmannDistribution(in const float3 N, in const float3 H, in floa
     return exp(-exponent) / (M_PIf * a2 * NoH2 * NoH2);
 }
 
-float _fn evalBeckmannDistribution(in const float3 H, in const float2 rgns)
+float _fn evalBeckmannDistribution(float3 H, float2 rgns)
 {
     const float NoH2 = H.z * H.z;
     const float2 Hproj = float2(H.x, H.y);
@@ -150,7 +150,7 @@ float _fn evalBeckmannDistribution(in const float3 H, in const float2 rgns)
 Returns a standard deviation of the Beckmann distribution
 as a cone apex angle in parallel plane domain based on the roughness.
 */
-float _fn beckmannStdDevAngle(in const float roughness)
+float _fn beckmannStdDevAngle(float roughness)
 {
     return atan(sqrt(0.5f) * roughness);
 }
@@ -162,8 +162,8 @@ N is the normal direction
 R is the mirror vector
 This approximation works fine for G smith correlated and uncorrelated
 */
-float3 _fn getBeckmannDominantDir(in const float3 N, in const float3 R,
-    in const float roughness)
+float3 _fn getBeckmannDominantDir(float3 N, float3 R,
+    float roughness)
 {
     const float smoothness = clamp(1.f - roughness, 0.0f, 1.0f);
     const float lerpFactor = smoothness * (sqrt(smoothness) + roughness);
@@ -175,7 +175,7 @@ float3 _fn getBeckmannDominantDir(in const float3 N, in const float3 R,
 /*******************************************************************************************
 GGX normal distribution function (NDF).
 */
-float _fn evalGGXDistribution(in const float3 N, in const float3 H, in const float roughness)
+float _fn evalGGXDistribution(float3 N, float3 H, float roughness)
 {
     // This doesn't look correct, so disabled    
     const float a2 = roughness * roughness;
@@ -187,7 +187,7 @@ float _fn evalGGXDistribution(in const float3 N, in const float3 H, in const flo
     return a2 / D_denom;
 }
 
-float _fn evalGGXDistribution(in const float3 H, in const float2 rgns)
+float _fn evalGGXDistribution(float3 H, float2 rgns)
 {
     // Numerically robust (w.r.t rgns=0) implementation of anisotropic GGX
     const float anisoU = rgns.y < rgns.x ? rgns.y / rgns.x : 1.f;
@@ -227,7 +227,7 @@ Computes the Smith'67 shadowing or masking term from a direction.
 \param[in] ndfType type of NDF. Only Beckmann and GGX are supported so far
 returns amount of visible microfacets
 */
-float _fn GSmith(const in float3 dir, const in float3 h, const in float2 rghns, in const uint ndfType)
+float _fn GSmith(const in float3 dir, const in float3 h, const in float2 rghns, uint ndfType)
 {
     if(dot(dir, h) * dir.z <= 0.f)
         return 0.f;
@@ -254,9 +254,9 @@ float _fn GSmith(const in float3 dir, const in float3 h, const in float2 rghns, 
 /**
 Computes shadowing and masking term for microfacet BRDFs
 */
-float _fn evalMicrofacetTerms(in const float3 T, in const float3 B, in const float3 N,
-    in const float3 h, in const float3 V, in const float3 L,
-    in const float2 roughness, in const uint ndfType, bool transmissive)
+float _fn evalMicrofacetTerms(float3 T, float3 B, float3 N,
+    float3 h, float3 V, float3 L,
+    float2 roughness, uint ndfType, bool transmissive)
 {
     const float3 lTg = float3(dot(T, L), dot(B, L), dot(N, L));
     const float3 vTg = float3(dot(T, V), dot(B, V), dot(N, V));
@@ -284,9 +284,9 @@ float _fn evalMicrofacetTerms(in const float3 T, in const float3 B, in const flo
     \param[out] pdf Probability density function for choosing the incident direction
 */
 float _fn sampleBeckmannDistribution(
-	in const float3 wo,
-	in const float2 roughness,
-	in const float2 rSample,
+	float3 wo,
+	float2 roughness,
+	float2 rSample,
 	_ref(float3) m,
 	_ref(float3) wi,
 	_ref(float) pdf)
@@ -340,9 +340,9 @@ float _fn sampleBeckmannDistribution(
     \param[out] pdf Probability density function for choosing the incident direction
 */
 float _fn sampleGGXDistribution(
-	in const float3 wo,
+	float3 wo,
 	in float2 roughness,
-	in const float2 rSample,
+	float2 rSample,
 	_ref(float3) m,
 	_ref(float3) wi,
 	_ref(float) pdf)
