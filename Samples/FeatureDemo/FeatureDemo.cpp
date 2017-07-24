@@ -57,6 +57,7 @@ void FeatureDemo::initLightingPass()
 {
     mLightingPass.pProgram = GraphicsProgram::createFromFile("FeatureDemo.vs.slang", "FeatureDemo.ps.slang");
     mLightingPass.pProgram->addDefine("_LIGHT_COUNT", std::to_string(mpSceneRenderer->getScene()->getLightCount()));
+    mLightingPass.pProgram->addDefine("_SHADOW_CASTERS_COUNT", std::to_string(mShadowCastersCount));
     initControls();
     mLightingPass.pVars = GraphicsVars::create(mLightingPass.pProgram->getActiveVersion()->getReflector());
 	
@@ -75,9 +76,14 @@ void FeatureDemo::initLightingPass()
 
 void FeatureDemo::initShadowPass()
 {
-    mShadowPass.pCsm = CascadedShadowMaps::create(2048, 2048, mpSceneRenderer->getScene()->getLight(0), mpSceneRenderer->getScene()->shared_from_this(), 4);
-    mShadowPass.pCsm->setFilterMode(CsmFilterEvsm2);
-    mShadowPass.pCsm->setVsmLightBleedReduction(0.3f);
+    mShadowPass.pCsm.clear();
+    mShadowPass.pCsm.resize(mShadowCastersCount);
+    for(uint32_t i = 0 ; i < mShadowCastersCount ; i++)
+    {
+        mShadowPass.pCsm[i] = CascadedShadowMaps::create(2048, 2048, mpSceneRenderer->getScene()->getLight(i), mpSceneRenderer->getScene()->shared_from_this(), 4);
+        mShadowPass.pCsm[i]->setFilterMode(CsmFilterEvsm2);
+        mShadowPass.pCsm[i]->setVsmLightBleedReduction(0.3f);
+    }
 }
 
 void FeatureDemo::initSSAO()
@@ -148,6 +154,8 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
         pScene->setAmbientIntensity(vec3(0.1f));
     }
 
+    mShaderCasterUiIndex = 0;
+    mShadowCastersCount = 1;
     mpSceneRenderer = FeatureDemoSceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
     mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
@@ -307,7 +315,10 @@ void FeatureDemo::lightingPass()
     if (mControls[ControlID::EnableShadows].enabled)
     {
         pCB["camVpAtLastCsmUpdate"] = mShadowPass.camVpAtLastCsmUpdate;
-        mShadowPass.pCsm->setDataIntoGraphicsVars(mLightingPass.pVars, "gCsmData");
+        for(uint32_t i = 0 ; i < mShadowCastersCount ; i++)
+        {
+            mShadowPass.pCsm[i]->setDataIntoGraphicsVars(mLightingPass.pVars, "gCsmData[" + std::to_string(i) + "]");
+        }
     }
 
     if (mControls[EnableReflections].enabled)
@@ -365,7 +376,10 @@ void FeatureDemo::shadowPass()
     if (mControls[EnableShadows].enabled && mShadowPass.updateShadowMap)
     {
         mShadowPass.camVpAtLastCsmUpdate = mpSceneRenderer->getScene()->getActiveCamera()->getViewProjMatrix();
-        mShadowPass.pCsm->setup(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), mEnableDepthPass ? mpDepthPassFbo->getDepthStencilTexture() : nullptr);
+        for(uint32_t i = 0 ; i < mShadowCastersCount ; i++)
+        {
+            mShadowPass.pCsm[i]->setup(mpRenderContext.get(), mpSceneRenderer->getScene()->getActiveCamera().get(), mEnableDepthPass ? mpDepthPassFbo->getDepthStencilTexture() : nullptr);
+        }
 		mpRenderContext->flush();
     }
 }
@@ -430,7 +444,10 @@ void FeatureDemo::onBeginTestFrame()
     if (mCurrentTrigger == SampleTest::TriggerType::None)
     {
         auto task = (mCurrentTrigger == SampleTest::TriggerType::Frame) ? mCurrentFrameTest->mTask : mCurrentTimeTest->mTask;
-        mShadowPass.pCsm->setSdsmReadbackLatency(task == SampleTest::TaskType::ScreenCapture ? 0 : 1);
+        for(auto& pCsm : mShadowPass.pCsm)
+        {
+            pCsm->setSdsmReadbackLatency(task == SampleTest::TaskType::ScreenCapture ? 0 : 1);
+        }
     }
 }
 

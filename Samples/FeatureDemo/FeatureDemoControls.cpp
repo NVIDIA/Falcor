@@ -286,8 +286,16 @@ void FeatureDemo::onGuiRender()
             }
             if (mControls[ControlID::EnableShadows].enabled)
             {
+                if (mpGui->addIntVar("Shadow Casters Count", (int32_t&)mShadowCastersCount, 1, max(4u, mpSceneRenderer->getScene()->getLightCount())))
+                {
+                    initShadowPass();
+                    mLightingPass.pProgram->addDefine("_SHADOW_CASTERS_COUNT", std::to_string(mShadowCastersCount));
+                }
+
+                mpGui->addIntVar("Shadow Caster UI", (int32_t&)mShaderCasterUiIndex, 0, mpSceneRenderer->getScene()->getLightCount());
+
                 mpGui->addCheckBox("Update Map", mShadowPass.updateShadowMap);
-                mShadowPass.pCsm->renderUi(mpGui.get());
+                mShadowPass.pCsm[mShaderCasterUiIndex]->renderUi(mpGui.get());
                 if (mpGui->addCheckBox("Visualize Cascades", mControls[ControlID::VisualizeCascades].enabled)) applyLightingProgramControl(ControlID::VisualizeCascades);
             }
             mpGui->endGroup();

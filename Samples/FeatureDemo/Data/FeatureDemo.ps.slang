@@ -64,9 +64,9 @@ PsOut main(MainVsOut vOut, float4 pixelCrd : SV_POSITION)
     {
         float shadowFactor = 1;
 #ifdef _ENABLE_SHADOWS
-        if (l == 0)
+        if (l < _SHADOW_CASTERS_COUNT)
         {
-            shadowFactor = calcShadowFactor(gCsmData, vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy / vOut.vsData.posH.w);
+            shadowFactor = calcShadowFactor(gCsmData[l], vOut.shadowsDepthC, shAttr.P, vOut.vsData.posH.xy / vOut.vsData.posH.w);
             shadowFactor *= opacity;
             envMapFactor -= 1 - shadowFactor;
         }

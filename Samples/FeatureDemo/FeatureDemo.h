@@ -51,7 +51,7 @@ private:
     struct ShadowPass
     {
         bool updateShadowMap = true;
-        CascadedShadowMaps::UniquePtr pCsm;
+        std::vector<CascadedShadowMaps::UniquePtr> pCsm;
         glm::mat4 camVpAtLastCsmUpdate = glm::mat4();
     };
     ShadowPass mShadowPass;
@@ -207,6 +207,8 @@ private:
     void applyCameraPathState();
     bool mOptimizedShaders = true;
 	bool mEnableDepthPass = true;
+    uint32_t mShadowCastersCount = 1;
+    uint32_t mShaderCasterUiIndex = 0;
 
     // Testing 
     void onInitializeTesting() override;
