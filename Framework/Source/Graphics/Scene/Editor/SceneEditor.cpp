@@ -527,7 +527,6 @@ namespace Falcor
 
         mpCameraModel = Model::createFromFile("Framework/Models/Camera.obj");
 
-        // #TODO can a scene have no cameras?
         if (mpScene->getCameraCount() > 0)
         {
             for (uint32_t i = 0; i < mpScene->getCameraCount(); i++)
@@ -538,8 +537,6 @@ namespace Falcor
                 // Track camera names
                 mCameraNames.emplace(pCamera->getName());
             }
-
-            mEditorCameraModelID = mpEditorScene->getModelCount() - 1;
         }
 
         //
@@ -548,7 +545,6 @@ namespace Falcor
 
         mpLightModel = Model::createFromFile("Framework/Models/LightBulb.obj");
 
-        bool pointLightsAdded = false;
         uint32_t pointLightID = 0;
         for (uint32_t i = 0; i < mpScene->getLightCount(); i++)
         {
@@ -558,19 +554,14 @@ namespace Falcor
             if (pLight->getType() == LightPoint)
             {
                 mpEditorScene->addModelInstance(mpLightModel, "Point Light " + std::to_string(pointLightID++), glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
-                pointLightsAdded = true;
             }
 
             // Track light names
             mLightNames.emplace(pLight->getName());
         }
 
-        if (pointLightsAdded)
-        {
-            mEditorLightModelID = mpEditorScene->getModelCount() - 1;
-        }
-
         rebuildLightIDMap();
+        updateEditorModelIDs();
 
         //
         // Master Scene Model Instance Rotations
