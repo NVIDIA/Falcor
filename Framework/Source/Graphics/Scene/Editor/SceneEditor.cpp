@@ -324,13 +324,16 @@ namespace Falcor
     {
         detachObjectFromPaths(mpScene->getLight(id));
         mLightNames.erase(mpScene->getLight(id)->getName());
+
+        if (mpScene->getLight(id)->getType() == LightPoint)
+        {
+            uint32_t instanceID = mLightIDSceneToEditor.at(id);
+            mpEditorScene->deleteModelInstance(mEditorLightModelID, instanceID);
+        }
+
         mpScene->deleteLight(id);
 
-        uint32_t instanceID = mLightIDSceneToEditor[id];
-
-        mpEditorScene->deleteModelInstance(mEditorLightModelID, instanceID);
         updateEditorModelIDs();
-
         rebuildLightIDMap();
 
         deselect();
