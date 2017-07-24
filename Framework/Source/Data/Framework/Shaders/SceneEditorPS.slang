@@ -66,7 +66,7 @@ PSOut main(EditorVSOut vOut) : SV_TARGET
     return vOut.drawID;
 #else
     #ifdef SHADING
-        float shading = lerp(0.5, 1, dot(toCamera, vOut.vOut.normalW));
+        float shading = lerp(0.2f, 1.0f, dot(toCamera, normalize(vOut.vOut.normalW)));
         return float4(gColor * shading, 1);
     #else
         return float4(gColor, 1);

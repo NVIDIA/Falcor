@@ -83,9 +83,6 @@ void SceneEditorSample::initNewScene()
 void SceneEditorSample::initShader()
 {
     mpProgram = GraphicsProgram::createFromFile("", "SceneEditorSample.ps.slang");
-    std::string lights;
-    getSceneLightString(mpScene.get(), lights);
-    mpProgram->addDefine("_LIGHT_SOURCES", lights);
     mpVars = GraphicsVars::create(mpProgram->getActiveVersion()->getReflector());
 }
 
@@ -108,13 +105,6 @@ void SceneEditorSample::createScene()
     initNewScene();
 }
 
-std::string PrintVec3(const glm::vec3& v)
-{
-    std::string s("(");
-    s += std::to_string(v[0]) + ", " + std::to_string(v[1]) + ", " + std::to_string(v[2]) + ")";
-    return s;
-}
-
 void SceneEditorSample::onFrameRender()
 {
 
@@ -123,13 +113,6 @@ void SceneEditorSample::onFrameRender()
 
     if(mpScene)
     {
-        // If lights changed, recompile shader
-        if (mScenePrevLightCount != mpScene->getLightCount())
-        {
-            initShader();
-            mScenePrevLightCount = mpScene->getLightCount();
-        }
-
         mpDefaultPipelineState->setBlendState(nullptr);
         mpDefaultPipelineState->setDepthStencilState(nullptr);
         mpRenderContext->setGraphicsVars(mpVars);

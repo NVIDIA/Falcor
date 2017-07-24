@@ -324,19 +324,19 @@ namespace Falcor
     {
         detachObjectFromPaths(mpScene->getLight(id));
         mLightNames.erase(mpScene->getLight(id)->getName());
-        mpScene->deleteLight(id);
 
-        uint32_t instanceID = mLightIDSceneToEditor[id];
-        bool isLastInstance = mpEditorScene->getModelInstanceCount(mEditorLightModelID) == 1;
-
-        mpEditorScene->deleteModelInstance(mEditorLightModelID, instanceID);
-
-        if (isLastInstance)
+        if (mpScene->getLight(id)->getType() == LightPoint)
         {
-            mEditorLightModelID = (uint32_t)-1;
+            uint32_t instanceID = mLightIDSceneToEditor.at(id);
+            mpEditorScene->deleteModelInstance(mEditorLightModelID, instanceID);
         }
 
+        mpScene->deleteLight(id);
+
+        updateEditorModelIDs();
         rebuildLightIDMap();
+
+        deselect();
     }
 
     void SceneEditor::addPointLight(Gui* pGui)
@@ -345,27 +345,31 @@ namespace Falcor
         {
             if (pGui->addButton("Add Point Light"))
             {
-                auto newLight = PointLight::create();
-
-                const auto& pCamera = mpEditorScene->getActiveCamera();
-
-                // Place in front of camera
-                glm::vec3 forward = glm::normalize(pCamera->getTarget() - pCamera->getPosition());
-                newLight->setWorldPosition(pCamera->getPosition() + forward);
-
-                uint32_t lightID = mpScene->addLight(newLight);
-                mpEditorScene->addModelInstance(mpLightModel, "Light " + std::to_string(lightID), glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
-                mSelectedLight = lightID;
-
-                rebuildLightIDMap();
-
-                // If this is the first light added, get its modelID
-                if (mEditorLightModelID == (uint32_t)-1)
+                if (mpScene->getLightCount() >= MAX_LIGHT_SOURCES)
                 {
-                    mEditorLightModelID = mpEditorScene->getModelCount() - 1;
+                    msgBox("There cannot be more than 16 lights at a time in a scene!");
+                    return;
                 }
 
-                select(mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[lightID]));
+                auto pNewLight = PointLight::create();
+
+                // Place in front of camera
+                const auto& pCamera = mpEditorScene->getActiveCamera();
+                glm::vec3 forward = glm::normalize(pCamera->getTarget() - pCamera->getPosition());
+                pNewLight->setWorldPosition(pCamera->getPosition() + forward);
+
+                mSelectedLight = mpScene->addLight(pNewLight);
+
+                // Name
+                std::string name = getUniqueNumberedName("PointLight", 0, mLightNames);
+                pNewLight->setName(name);
+                mLightNames.insert(name);
+
+                mpEditorScene->addModelInstance(mpLightModel, name, glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
+                updateEditorModelIDs();
+                rebuildLightIDMap();
+
+                select(mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[mSelectedLight]));
 
                 mSceneDirty = true;
             }
@@ -378,8 +382,19 @@ namespace Falcor
         {
             if (pGui->addButton("Add Directional Light"))
             {
-                auto newLight = DirectionalLight::create();
-                mpScene->addLight(newLight);
+                if (mpScene->getLightCount() >= MAX_LIGHT_SOURCES)
+                {
+                    msgBox("There cannot be more than 16 lights at a time in a scene!");
+                    return;
+                }
+
+                auto pNewLight = DirectionalLight::create();
+                mpScene->addLight(pNewLight);
+
+                // Name
+                std::string name = getUniqueNumberedName("DirLight", 0, mLightNames);
+                pNewLight->setName(name);
+                mLightNames.insert(name);
 
                 mSceneDirty = true;
             }
@@ -528,7 +543,6 @@ namespace Falcor
 
         mpCameraModel = Model::createFromFile("Framework/Models/Camera.obj");
 
-        // #TODO can a scene have no cameras?
         if (mpScene->getCameraCount() > 0)
         {
             for (uint32_t i = 0; i < mpScene->getCameraCount(); i++)
@@ -539,8 +553,6 @@ namespace Falcor
                 // Track camera names
                 mCameraNames.emplace(pCamera->getName());
             }
-
-            mEditorCameraModelID = mpEditorScene->getModelCount() - 1;
         }
 
         //
@@ -549,7 +561,6 @@ namespace Falcor
 
         mpLightModel = Model::createFromFile("Framework/Models/LightBulb.obj");
 
-        bool pointLightsAdded = false;
         uint32_t pointLightID = 0;
         for (uint32_t i = 0; i < mpScene->getLightCount(); i++)
         {
@@ -559,19 +570,14 @@ namespace Falcor
             if (pLight->getType() == LightPoint)
             {
                 mpEditorScene->addModelInstance(mpLightModel, "Point Light " + std::to_string(pointLightID++), glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
-                pointLightsAdded = true;
             }
 
             // Track light names
             mLightNames.emplace(pLight->getName());
         }
 
-        if (pointLightsAdded)
-        {
-            mEditorLightModelID = mpEditorScene->getModelCount() - 1;
-        }
-
         rebuildLightIDMap();
+        updateEditorModelIDs();
 
         //
         // Master Scene Model Instance Rotations
@@ -817,11 +823,11 @@ namespace Falcor
 
     std::string SceneEditor::getUniqueNumberedName(const std::string& baseName, uint32_t idSuffix, const std::set<std::string>& nameMap) const
     {
-        std::string name = baseName + std::to_string(idSuffix);
-        while (nameMap.count(name) > 0)
+        std::string name;
+        do
         {
             name = baseName + std::to_string(idSuffix++);
-        }
+        } while (nameMap.count(name) > 0);
 
         return name;
     }
@@ -1038,17 +1044,21 @@ namespace Falcor
                 setActiveCamera(pGui);
                 setCameraName(pGui);
                 deleteCamera(pGui);
-                pGui->addSeparator();
-                assert(mpScene->getCameraCount() > 0);
-                setCameraFocalLength(pGui);
-                setCameraAspectRatio(pGui);
-                setCameraDepthRange(pGui);
 
-                setCameraPosition(pGui);
-                setCameraTarget(pGui);
-                setCameraUp(pGui);
+                // Last camera could have just been deleted
+                if (mpScene->getCameraCount() > 0)
+                {
+                    pGui->addSeparator();
+                    setCameraFocalLength(pGui);
+                    setCameraAspectRatio(pGui);
+                    setCameraDepthRange(pGui);
 
-                setObjectPath(pGui, mpScene->getActiveCamera(), "Camera");
+                    setCameraPosition(pGui);
+                    setCameraTarget(pGui);
+                    setCameraUp(pGui);
+
+                    setObjectPath(pGui, mpScene->getActiveCamera(), "Camera");
+                }
             }
 
             pGui->endGroup();
@@ -1268,6 +1278,32 @@ namespace Falcor
         return (uint32_t)-1;
     }
 
+    void SceneEditor::updateEditorModelIDs()
+    {
+        mEditorCameraModelID = (uint32_t)-1;
+        mEditorLightModelID = (uint32_t)-1;
+        mEditorKeyframeModelID = (uint32_t)-1;
+
+        for (uint32_t i = 0; i < mpEditorScene->getModelCount(); i++)
+        {
+            assert(mpEditorScene->getModelInstanceCount(i) > 0);
+
+            const Model::SharedPtr& pModel = mpEditorScene->getModelInstance(i, 0)->getObject();
+            if (pModel == mpCameraModel)
+            {
+                mEditorCameraModelID = i;
+            }
+            else if (pModel == mpLightModel)
+            {
+                mEditorLightModelID = i;
+            }
+            else if (pModel == mpKeyframeModel)
+            {
+                mEditorKeyframeModelID = i;
+            }
+        }
+    }
+
     void SceneEditor::addModel(Gui* pGui)
     {
         if (mpPathEditor == nullptr)
@@ -1418,14 +1454,8 @@ namespace Falcor
 
                 // Update editor scene
                 mpEditorScene->addModelInstance(mpCameraModel, pCamera->getName(), glm::vec3(), glm::vec3(), glm::vec3(kCameraModelScale));
+                updateEditorModelIDs();
                 mCameraNames.emplace(pCamera->getName());
-
-                // #TODO Re: initialization, can scenes start with 0 cameras?
-                // If this is the first camera added, get its modelID
-                if (mEditorCameraModelID == (uint32_t)-1)
-                {
-                    mEditorCameraModelID = mpEditorScene->getModelCount() - 1;
-                }
 
                 select(mpEditorScene->getModelInstance(mEditorCameraModelID, camIndex));
 
@@ -1440,18 +1470,13 @@ namespace Falcor
         {
             if (pGui->addButton("Remove Camera"))
             {
-                if (mpScene->getCameraCount() == 1)
-                {
-                    msgBox("The Scene has only one camera. Scenes must have at least one camera. Ignoring call.");
-                    return;
-                }
-
                 detachObjectFromPaths(mpScene->getActiveCamera());
                 mCameraNames.erase(mpScene->getActiveCamera()->getName());
                 mpScene->deleteCamera(mpScene->getActiveCameraIndex());
 
                 mpEditorScene->deleteModelInstance(mEditorCameraModelID, mpScene->getActiveCameraIndex());
-                select(mpEditorScene->getModelInstance(mEditorCameraModelID, mpScene->getActiveCameraIndex()));
+                updateEditorModelIDs();
+                deselect();
 
                 mSceneDirty = true;
             }
@@ -1552,7 +1577,7 @@ namespace Falcor
                 mpEditorScene->addModelInstance(pNewInstance);
             }
 
-            mEditorKeyframeModelID = mpEditorScene->getModelCount() - 1;
+            updateEditorModelIDs();
         }
     }
 
@@ -1564,7 +1589,7 @@ namespace Falcor
         {
             // Remove keyframe models
             mpEditorScene->deleteModel(mEditorKeyframeModelID);
-            mEditorKeyframeModelID = (uint32_t)-1;
+            updateEditorModelIDs();
         }
     }
 
