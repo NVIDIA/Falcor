@@ -43,7 +43,7 @@ Documentation
 //#define _MS_DISABLE_ALPHA_TEST	///< Disables alpha test (handy for early-z etc.)
 //#define _MS_DISABLE_TEXTURES		///< Disables material texture fetches, all materials are solid color
 //#define _MS_USER_DERIVATIVES		///< Use user-passed dx/dy derivatives for texture filtering during shading
-//#define _MS_USER_NORMAL_MAPPING	///< Use user-defined callback of a form void PerturbNormal(in const SMaterial mat, inout ShadingAttribs ShAttr) to perform normal mapping
+//#define _MS_USER_NORMAL_MAPPING	///< Use user-defined callback of a form void PerturbNormal(SMaterial mat, inout ShadingAttribs ShAttr) to perform normal mapping
 //#define _MS_NUM_LAYERS			///< Use a pre-specified number of layers to use in the material
 //#define _MS_IMPORTANCE_SAMPLING   ///< Use BSDF importance sampling for path tracer next event estimation
 
@@ -118,12 +118,12 @@ This includes fetching all textures and computing final shading attributes, like
 After this step, one can save these shading attributes, e.g., in a G-Buffer to perform lighting afterwards.
 This routine also applies all material modifiers, like performs alpha test and applies a normal map.
 */
-void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos,
+void _fn prepareShadingAttribs(MaterialData material, in float3 P, in float3 camPos,
     in float3 normal, in float3 bitangent, in float2 uv,
 #ifdef _MS_USER_DERIVATIVES
-    in const float2 dPdx, in const float2 dPdy,
+    float2 dPdx, float2 dPdy,
 #else
-    in const float lodBias,
+    float lodBias,
 #endif
     _ref(ShadingAttribs) shAttr)
 {
@@ -174,12 +174,12 @@ void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in f
 Another overload of PrepareShadingAttribs(), which does not require tangents.
 Instead it constructs a world-space axis-aligned tangent frame on the fly.
 */
-void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos,
+void _fn prepareShadingAttribs(MaterialData material, in float3 P, in float3 camPos,
     in float3 normal, in float2 uv,
 #ifdef _MS_USER_DERIVATIVES
-    in const float2 dPdx, in const float2 dPdy,
+    float2 dPdx, float2 dPdy,
 #else
-    in const float lodBias,
+    float lodBias,
 #endif
     _ref(ShadingAttribs) shAttr)
 {
@@ -198,25 +198,25 @@ void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in f
 
 #ifndef _MS_USER_DERIVATIVES
 // Legacy version of prepareShadingAttribs() without LOD bias
-void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos, in float3 normal, in float2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(MaterialData material, in float3 P, in float3 camPos, in float3 normal, in float2 uv, _ref(ShadingAttribs) shAttr)
 {
     prepareShadingAttribs(material, P, camPos, normal, uv, 0, shAttr);
 }
 
-void _fn prepareShadingAttribs(in const MaterialData material, in float3 P, in float3 camPos, in float3 normal, in float3 bitangent, in float2 uv, _ref(ShadingAttribs) shAttr)
+void _fn prepareShadingAttribs(MaterialData material, in float3 P, in float3 camPos, in float3 normal, in float3 bitangent, in float2 uv, _ref(ShadingAttribs) shAttr)
 {
     prepareShadingAttribs(material, P, camPos, normal, bitangent, uv, 0, shAttr);
 }
 #endif
 
-float4 _fn evalEmissiveLayer(in const MaterialLayerValues layer, _ref(PassOutput) result)
+float4 _fn evalEmissiveLayer(MaterialLayerValues layer, _ref(PassOutput) result)
 {
     result.diffuseAlbedo += 1.f;
     result.diffuseIllumination += layer.albedo.rgb;
     return (1).rrrr;
 }
 
-float4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const float3 lightIntensity, in const float3 lightDir, in const float3 normal, _ref(PassOutput) result)
+float4 _fn evalDiffuseLayer(MaterialLayerValues layer, float3 lightIntensity, float3 lightDir, float3 normal, _ref(PassOutput) result)
 {
     float3 value = lightIntensity;
     float weight = 0;
@@ -235,7 +235,7 @@ float4 _fn evalDiffuseLayer(in const MaterialLayerValues layer, in const float3 
 
 // Implementation of NDF filtering code from the HPG'16 submission
 // The writeup is here: //research/graphics/projects/halfvectorSpace/SAA/paper/specaa-sub.pdf
-float2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs lAttr, in float2 roughness)
+float2 _fn filterRoughness(ShadingAttribs shAttr, LightAttribs lAttr, in float2 roughness)
 {
 #ifdef _MS_USER_HALF_VECTOR_DERIVATIVES
     float2  hppDx = shAttr.DHDX;
@@ -262,7 +262,7 @@ float2 _fn filterRoughness(in const ShadingAttribs shAttr, in const LightAttribs
     return roughness;
 }
 
-float4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialLayerValues data, in const ShadingAttribs shAttr, in const LightAttribs lAttr, _ref(PassOutput) result)
+float4 _fn evalSpecularLayer(MaterialLayerDesc desc, MaterialLayerValues data, ShadingAttribs shAttr, LightAttribs lAttr, _ref(PassOutput) result)
 {
 #ifndef _MS_DISABLE_SPECULAR
     /* Add albedo regardless of facing */
@@ -340,7 +340,7 @@ float4 _fn evalSpecularLayer(in const MaterialLayerDesc desc, in const MaterialL
 #endif
 }
 
-float3 _fn blendLayer(in const float4 albedo, in const float4 layerOut, in const uint blendType, in const float3 currentValue)
+float3 _fn blendLayer(float4 albedo, float4 layerOut, uint blendType, float3 currentValue)
 {
     /* Account for albedo */
     float3 scaledLayerOut = layerOut.rgb * albedo.rgb;
@@ -370,7 +370,7 @@ The routine takes a layer index, as well as shading attributes, including prepar
 it also takes prepared attributes of a light source, such as incident radiance and a world-space direction to the light.
 The output is the illumination of the current layer, blended into the results of the previous layers with a specified blending mode.
 */
-void _fn evalMaterialLayer(in const int iLayer, in const ShadingAttribs attr, in const LightAttribs lAttr,
+void _fn evalMaterialLayer(int iLayer, ShadingAttribs attr, LightAttribs lAttr,
     _ref(PassOutput) result)
 {
     float4 value = 0;
@@ -404,10 +404,10 @@ This is the main routing for evaluating a complete PBR material, given a shading
 Should be called once per light.
 */
 void _fn evalMaterial(
-    in const ShadingAttribs shAttr,
-    in const LightAttribs lAttr,
+    ShadingAttribs shAttr,
+    LightAttribs lAttr,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFAULTS(false))
+    bool initializeShadingOut DEFAULTS(false))
 {
     /* If it's the first pass, initialize all the aggregates to zero */
     if(initializeShadingOut)
@@ -449,11 +449,11 @@ void _fn evalMaterial(
 }
 
 void _fn evalMaterial(
-    in const ShadingAttribs shAttr,
-    in const LightData light,
+    ShadingAttribs shAttr,
+    LightData light,
     float shadowFactor,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFAULTS(false))
+    bool initializeShadingOut DEFAULTS(false))
 {
     /* Prepare lighting attributes */
     LightAttribs LAttr;
@@ -467,10 +467,10 @@ void _fn evalMaterial(
 Another overload of material evaluation function, which prepares light attributes internally.
 */
 void _fn evalMaterial(
-    in const ShadingAttribs shAttr,
-    in const LightData light,
+    ShadingAttribs shAttr,
+    LightData light,
     _ref(ShadingOutput) result,
-    in const bool initializeShadingOut DEFAULTS(false))
+    bool initializeShadingOut DEFAULTS(false))
 {
     evalMaterial(shAttr, light, 1, result, initializeShadingOut);
 }
@@ -493,7 +493,7 @@ void _fn initNullLayer(_ref(MaterialLayerDesc) layer)
 /**
 Initializes a material layer with diffuse BRDF
 */
-void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const float3 albedo)
+void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, float3 albedo)
 {
     desc.type = MatLambert;
     desc.blending = BlendAdd;
@@ -509,7 +509,7 @@ void _fn initDiffuseLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues
 /**
 Initializes a material layer with conductor BRDF. IoR and Kappa are set to the values of chrome by default.
 */
-void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const float3 color, in const float roughness, in const float IoR = 3.f, in const float kappa = 4.2f)
+void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, float3 color, float roughness, float IoR = 3.f, float kappa = 4.2f)
 {
     desc.type = MatConductor;
     desc.blending = BlendAdd;
@@ -523,7 +523,7 @@ void _fn initConductorLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValu
 /**
 Initializes a material layer with dielectric BRDF.
 */
-void _fn initDielectricLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, in const float3 color, in const float roughness, in const float IoR)
+void _fn initDielectricLayer(_ref(MaterialLayerDesc) desc, _ref(MaterialLayerValues) data, float3 color, float roughness, float IoR)
 {
     desc.type = MatDielectric;
     desc.blending = BlendFresnel;
@@ -544,7 +544,7 @@ Tries to find a layer data for a given material type (diffuse/conductor/etc).
 \param[out] data           Layer data, if found
 returns false if the layer is not found, true otherwise
 */
-bool _fn getLayerByType(in const PreparedMaterialData material, in const uint layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
+bool _fn getLayerByType(PreparedMaterialData material, uint layerType, _ref(MaterialLayerValues) data, _ref(MaterialLayerDesc) desc)
 {
     int layerId = material.desc.layerIdByType[layerType].id;
     if(layerId != -1)
@@ -561,7 +561,7 @@ Tries to find a diffuse albedo color for a given material
 \param[in] Material Material to look in
 returns black if the layer is not found, diffuse albedo color otherwise
 */
-float4 _fn getDiffuseColor(in const ShadingAttribs shAttr)
+float4 _fn getDiffuseColor(ShadingAttribs shAttr)
 {
     float4 ret = 0;
     // This is here because the HLSL compiler complains about 'data' not being completely initialized when used
@@ -614,7 +614,7 @@ Tries to find a specular albedo color for a given material
 \param[in] material Material to look in
 returns black if the layer is not found, specular color otherwise
 */
-float4 _fn getSpecularColor(in const ShadingAttribs shAttr)
+float4 _fn getSpecularColor(ShadingAttribs shAttr)
 {
     float4 ret = 0;
     MaterialLayerValues data;
@@ -635,7 +635,7 @@ float4 _fn getSpecularColor(in const ShadingAttribs shAttr)
     \param[out] result Gather incident direction, probability density function, and path throughput
 */
 void _fn sampleMaterial(
-	in const ShadingAttribs shAttr,
+	ShadingAttribs shAttr,
 	in float2 rSample,
 	_ref(ShadingOutput) result)
 {

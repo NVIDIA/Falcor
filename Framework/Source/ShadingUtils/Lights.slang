@@ -60,7 +60,7 @@ struct LightAttribs
 /**
 	This routine computes the position of the the light based on the point 'shadingPosition'.
 */
-inline float3 _fn getLightPos(in const LightData Light, in const float3 shadingPosition)
+inline float3 _fn getLightPos(LightData Light, float3 shadingPosition)
 {
     float3 lightPos = Light.worldPos;
     if(Light.type == LightArea)
@@ -78,7 +78,7 @@ inline float3 _fn getLightPos(in const LightData Light, in const float3 shadingP
 /**
 	This routine computes the radiance from the light at the point 'shadingPosition'.
 */
-inline float3 _fn getLightRadiance(in const LightData Light, in const float3 shadingPosition)
+inline float3 _fn getLightRadiance(LightData Light, float3 shadingPosition)
 {
     float3 lightRadiance = Light.intensity;
     if(Light.type == LightPoint || Light.type == LightArea)
@@ -96,7 +96,7 @@ inline float3 _fn getLightRadiance(in const LightData Light, in const float3 sha
 	The outputs are an incident radiance towards the shading point 
 	and the direction from the shading point towards the light source.
 */
-inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAttribs ShAttr, float shadowFactor, _ref(LightAttribs) LightAttr)
+inline void _fn prepareLightAttribs(LightData Light, ShadingAttribs ShAttr, float shadowFactor, _ref(LightAttribs) LightAttr)
 {
 	/* Evaluate direction to the light */
     LightAttr.P = getLightPos(Light, ShAttr.P);
@@ -176,7 +176,7 @@ inline void _fn prepareLightAttribs(in const LightData Light, in const ShadingAt
 /**
     This routine samples the light source.
 */
-void _fn sampleLight(in const float3 shadingHitPos, in const LightData lData, const float3 rSample, _ref(LightAttribs) lAttr)
+void _fn sampleLight(float3 shadingHitPos, LightData lData, const float3 rSample, _ref(LightAttribs) lAttr)
 {
 	// Sample the light based on its type: point, directional, or area
 	switch (lData.type)
@@ -281,7 +281,7 @@ void _fn sampleLight(in const float3 shadingHitPos, in const LightData lData, co
 /**
 This routine samples a rectangular area light source in a stratified way.
 */
-void _fn stratifiedSampleRectangularAreaLight(in const float3 shadingHitPos, in const LightData lData, const float2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
+void _fn stratifiedSampleRectangularAreaLight(float3 shadingHitPos, LightData lData, const float2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
 {
 	if (lData.type != LightArea)
 		return;

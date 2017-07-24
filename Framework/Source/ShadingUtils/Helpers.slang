@@ -178,7 +178,7 @@ _fn float3 refract(const float3 I, const float3 N, float eta)
 					Geometric routines
 *******************************************************************/
 
-void _fn createTangentFrame(in const float3 normal, _ref(float3) bitangent)
+void _fn createTangentFrame(float3 normal, _ref(float3) bitangent)
 {
 	if(abs(normal.x) > abs(normal.y))
 		bitangent = float3(normal.z, 0.f, -normal.x) / length(float2(normal.x, normal.z));
@@ -218,7 +218,7 @@ float4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs 
 }
 #endif
 
-float4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, in const ShadingAttribs attr, in float4 defaultValue)
+float4 _fn evalTex(in uint32_t hasTexture, Texture2D tex, SamplerState s, ShadingAttribs attr, in float4 defaultValue)
 {
 #ifndef _MS_DISABLE_TEXTURES
 	if(hasTexture != 0)
@@ -230,7 +230,7 @@ float4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState 
 	return defaultValue;
 }
 
-float4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, float4 color, in const ShadingAttribs attr)
+float4 _fn evalWithColor(in uint32_t hasTexture, Texture2D tex, SamplerState s, float4 color, ShadingAttribs attr)
 {
 	return evalTex(hasTexture, tex, s, attr, color);
 }
@@ -239,12 +239,12 @@ float4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, Sampler
 					Normal mapping
 *******************************************************************/
 
-float3 _fn normalToRGB(in const float3 normal)
+float3 _fn normalToRGB(float3 normal)
 {
 	return normal * 0.5f + 0.5f;
 }
 
-float3 _fn RGBToNormal(in const float3 rgbval)
+float3 _fn RGBToNormal(float3 rgbval)
 {
     return rgbval * 2.f - 1.f;
 }
@@ -269,7 +269,7 @@ void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref
 }
 
 #ifndef _MS_LEAN_MAPPING
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
+void _fn perturbNormal(MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
 	{
@@ -305,7 +305,7 @@ void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout Shad
     }
 }
 
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
+void perturbNormal(MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
 {
     if (mat.desc.hasNormalMap != 0)
     {
@@ -315,7 +315,7 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 #endif
 
 // Note: explicit overload instead of default argument, at least until cross-compiler can handle defaults
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr)
+void _fn perturbNormal(MaterialData mat, _ref(ShadingAttribs) attr)
 {
 	perturbNormal(mat, attr, false);
 }
@@ -325,12 +325,12 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr)
 					Alpha test
 *******************************************************************/
 
-bool _fn alphaTestEnabled(in const MaterialData mat)
+bool _fn alphaTestEnabled(MaterialData mat)
 {
     return mat.desc.hasAlphaMap != 0;
 }
 
-bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr)
+bool _fn alphaTestPassed(MaterialData mat, ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if(sampleTexture(mat.textures.alphaMap, mat.samplerState, attr).x < mat.values.alphaThreshold)
@@ -339,7 +339,7 @@ bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr
     return true;
 }
 
-void _fn basicAlphaTest(in const MaterialData mat, in const ShadingAttribs attr)
+void _fn basicAlphaTest(MaterialData mat, ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if(alphaTestEnabled(mat))
@@ -354,7 +354,7 @@ void _fn basicAlphaTest(in const MaterialData mat, in const ShadingAttribs attr)
                     Hashed Alpha Test
 *******************************************************************/
 
-bool _fn hashedAlphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr, float alphaThreshold)
+bool _fn hashedAlphaTestPassed(MaterialData mat, ShadingAttribs attr, float alphaThreshold)
 {
     float compareTo = alphaThreshold <= 0 ? mat.values.alphaThreshold : clamp(alphaThreshold, 0.0f, 1.0f);
 #ifndef _MS_DISABLE_ALPHA_TEST
@@ -364,7 +364,7 @@ bool _fn hashedAlphaTestPassed(in const MaterialData mat, in const ShadingAttrib
     return true;
 }
 
-void _fn applyHashedAlphaTest(in const MaterialData mat, in const ShadingAttribs attr, float alphaThreshold)
+void _fn applyHashedAlphaTest(MaterialData mat, ShadingAttribs attr, float alphaThreshold)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if (alphaTestEnabled(mat))
@@ -454,7 +454,7 @@ float _fn calculateHashedAlpha(float3 hashInputCoord, float hashScale, bool useA
 /*******************************************************************
     alpha test
 *******************************************************************/    
-void _fn applyAlphaTest(in const MaterialData material, in const ShadingAttribs shAttr, float3 posW)
+void _fn applyAlphaTest(MaterialData material, ShadingAttribs shAttr, float3 posW)
 {
     float hashedAlphaScale = 1.0f;
 #ifdef _HASHED_ALPHA_SCALE
