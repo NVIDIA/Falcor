@@ -352,19 +352,18 @@ namespace Falcor
                 glm::vec3 forward = glm::normalize(pCamera->getTarget() - pCamera->getPosition());
                 pNewLight->setWorldPosition(pCamera->getPosition() + forward);
 
+                mSelectedLight = mpScene->addLight(pNewLight);
+
                 // Name
-                uint32_t lightID = mpScene->addLight(pNewLight);
-                std::string name = getUniqueNumberedName("PointLight", lightID, mLightNames);
+                std::string name = getUniqueNumberedName("PointLight", 0, mLightNames);
                 pNewLight->setName(name);
                 mLightNames.insert(name);
 
                 mpEditorScene->addModelInstance(mpLightModel, name, glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
                 updateEditorModelIDs();
-                mSelectedLight = lightID;
-
                 rebuildLightIDMap();
 
-                select(mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[lightID]));
+                select(mpEditorScene->getModelInstance(mEditorLightModelID, mLightIDSceneToEditor[mSelectedLight]));
 
                 mSceneDirty = true;
             }
@@ -378,8 +377,10 @@ namespace Falcor
             if (pGui->addButton("Add Directional Light"))
             {
                 auto pNewLight = DirectionalLight::create();
-                uint32_t lightID = mpScene->addLight(pNewLight);
-                std::string name = getUniqueNumberedName("DirLight", lightID, mLightNames);
+                mpScene->addLight(pNewLight);
+
+                // Name
+                std::string name = getUniqueNumberedName("DirLight", 0, mLightNames);
                 pNewLight->setName(name);
                 mLightNames.insert(name);
 
