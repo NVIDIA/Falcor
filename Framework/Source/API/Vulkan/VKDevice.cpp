@@ -634,6 +634,8 @@ namespace Falcor
 
     bool Device::apiInit(const Desc& desc)
     {
+		mRgb32FloatSupported = false;
+
         mpApiData = new DeviceApiData;
         VkInstance instance = createInstance(mpApiData, desc);
         if (!instance) return false;

@@ -29,6 +29,7 @@
 #include "Bitmap.h"
 #include "FreeImage.h"
 #include "OS.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -85,13 +86,15 @@ namespace Falcor
         }
 
         uint32_t bpp = FreeImage_GetBPP(pDib);
+		bool rgb32FloatSupported = gpDevice->isRgb32FloatSupported();
+
         switch(bpp)
         {
         case 128:
             pBmp->mFormat = ResourceFormat::RGBA32Float;  // 4xfloat32 HDR format
             break;
         case 96:
-            pBmp->mFormat = ResourceFormat::RGBA32Float;  // 4xfloat32 HDR format
+            pBmp->mFormat = rgb32FloatSupported ? ResourceFormat::RGB32Float : ResourceFormat::RGBA32Float;  // 4xfloat32 HDR format
             break;
         case 64:
             pBmp->mFormat = ResourceFormat::RGBA16Float;  // 4xfloat16 HDR format
@@ -124,7 +127,7 @@ namespace Falcor
             pDib = pNew;
         }
 
-        if (bpp == 96)
+        if (!rgb32FloatSupported && bpp == 96)
         {
 			logWarning("Converting 96-bit texture to 128-bit");
 			bpp = 128;
