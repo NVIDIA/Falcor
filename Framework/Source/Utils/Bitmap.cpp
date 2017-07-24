@@ -91,11 +91,7 @@ namespace Falcor
             pBmp->mFormat = ResourceFormat::RGBA32Float;  // 4xfloat32 HDR format
             break;
         case 96:
-#ifdef FALCOR_VK
             pBmp->mFormat = ResourceFormat::RGBA32Float;  // 4xfloat32 HDR format
-#else
-            pBmp->mFormat = ResourceFormat::RGB32Float;  // 3xfloat32 HDR format
-#endif
             break;
         case 64:
             pBmp->mFormat = ResourceFormat::RGBA16Float;  // 4xfloat16 HDR format
@@ -121,21 +117,21 @@ namespace Falcor
         // Convert the image to RGBX image
         if(bpp == 24)
         {
+			logWarning("Converting 24-bit texture to 32-bit");
             bpp = 32;
             auto pNew = FreeImage_ConvertTo32Bits(pDib);
             FreeImage_Unload(pDib);
             pDib = pNew;
         }
 
-#ifdef FALCOR_VK
         if (bpp == 96)
         {
-            bpp = 128;
+			logWarning("Converting 96-bit texture to 128-bit");
+			bpp = 128;
             auto pNew = FreeImage_ConvertToRGBAF(pDib);
             FreeImage_Unload(pDib);
             pDib = pNew;
         }
-#endif
 
         uint32_t bytesPerPixel = bpp / 8;
 
