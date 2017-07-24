@@ -60,13 +60,13 @@ namespace Falcor
 
         using BufferVec = std::vector<Buffer::SharedPtr>;
         /** create a new object
-            \param pVBs Array of pointers to vertex buffers. Must have at least 1 element
+            \param primTopology The primitive topology
             \param pLayout The vertex layout description
+            \param pVBs Array of pointers to vertex buffers. Number of buffers must match with pLayout.
             \param pIB Pointer to the index-buffer. Can be nullptr, in which case no index-buffer will be bound.
             \param ibFormat The resource format of the index buffer. Can be either R16Uint or R32Uint
-            \parm primTopology The primitive topology
         */
-        static SharedPtr create(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat, Topology primTopology);
+        static SharedPtr create(Topology primTopology, const VertexLayout::SharedPtr& pLayout = VertexLayout::SharedPtr(), const BufferVec& pVBs = BufferVec(), const Buffer::SharedPtr& pIB = Buffer::SharedPtr(), ResourceFormat ibFormat = ResourceFormat::Unknown);
         ~Vao();
 
         /** Get the API handle

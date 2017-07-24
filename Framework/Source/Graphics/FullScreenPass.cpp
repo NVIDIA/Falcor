@@ -86,7 +86,7 @@ namespace Falcor
         pLayout->addBufferLayout(0, pBufLayout);
 
         Vao::BufferVec buffers{ pVB };
-        pVao = Vao::create(buffers, pLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::TriangleStrip);
+        pVao = Vao::create(Vao::Topology::TriangleStrip, pLayout, buffers);
     }
 
     FullScreenPass::~FullScreenPass() 

@@ -145,7 +145,7 @@ namespace Falcor
         std::vector<Buffer::SharedPtr> pVB(1);
         pVB[0] = createVB ? Buffer::create(requiredVbSize + sizeof(ImDrawVert) * 1000, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, nullptr) : mpVao->getVertexBuffer(0);
         Buffer::SharedPtr pIB = createIB ? Buffer::create(requiredIbSize, Buffer::BindFlags::Index, Buffer::CpuAccess::Write, nullptr): mpVao->getIndexBuffer();
-        mpVao = Vao::create(pVB, mpLayout, pIB, ResourceFormat::R16Uint, Vao::Topology::TriangleList);
+        mpVao = Vao::create(Vao::Topology::TriangleList, mpLayout, pVB, pIB, ResourceFormat::R16Uint);
     }
     
     void Gui::onWindowResize(uint32_t width, uint32_t height)

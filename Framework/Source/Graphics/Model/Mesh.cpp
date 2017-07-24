@@ -89,7 +89,7 @@ namespace Falcor
 
         mPrimitiveCount = mIndexCount / VertsPerPrim;
 
-        mpVao = Vao::create(vertexBuffers, pLayout, pIndexBuffer, ResourceFormat::R32Uint, topology);
+        mpVao = Vao::create(topology, pLayout, vertexBuffers, pIndexBuffer, ResourceFormat::R32Uint);
     }
 
     void Mesh::resetGlobalIdCounter()
