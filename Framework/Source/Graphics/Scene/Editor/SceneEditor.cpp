@@ -342,16 +342,18 @@ namespace Falcor
         {
             if (pGui->addButton("Add Point Light"))
             {
-                auto newLight = PointLight::create();
+                auto pNewLight = PointLight::create();
 
                 // Place in front of camera
                 const auto& pCamera = mpEditorScene->getActiveCamera();
                 glm::vec3 forward = glm::normalize(pCamera->getTarget() - pCamera->getPosition());
-                newLight->setWorldPosition(pCamera->getPosition() + forward);
+                pNewLight->setWorldPosition(pCamera->getPosition() + forward);
 
-                uint32_t lightID = mpScene->addLight(newLight);
-                std::string name = "PointLight" + std::to_string(lightID);
-                newLight->setName(name);
+                // Name
+                uint32_t lightID = mpScene->addLight(pNewLight);
+                std::string name = getUniqueNumberedName("PointLight", lightID, mLightNames);
+                pNewLight->setName(name);
+                mLightNames.insert(name);
 
                 mpEditorScene->addModelInstance(mpLightModel, name, glm::vec3(), glm::vec3(), glm::vec3(kLightModelScale));
                 updateEditorModelIDs();
@@ -372,8 +374,11 @@ namespace Falcor
         {
             if (pGui->addButton("Add Directional Light"))
             {
-                auto newLight = DirectionalLight::create();
-                mpScene->addLight(newLight);
+                auto pNewLight = DirectionalLight::create();
+                uint32_t lightID = mpScene->addLight(pNewLight);
+                std::string name = getUniqueNumberedName("DirLight", lightID, mLightNames);
+                pNewLight->setName(name);
+                mLightNames.insert(name);
 
                 mSceneDirty = true;
             }
@@ -811,11 +816,11 @@ namespace Falcor
 
     std::string SceneEditor::getUniqueNumberedName(const std::string& baseName, uint32_t idSuffix, const std::set<std::string>& nameMap) const
     {
-        std::string name = baseName + std::to_string(idSuffix);
-        while (nameMap.count(name) > 0)
+        std::string name;
+        do
         {
             name = baseName + std::to_string(idSuffix++);
-        }
+        } while (nameMap.count(name) > 0);
 
         return name;
     }
