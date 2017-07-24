@@ -226,6 +226,8 @@ namespace Falcor
 
         // Find instance ID of a model instance in the editor scene. Returns uint -1 if not found.
         uint32_t findEditorModelInstanceID(uint32_t modelID, const Scene::ModelInstance::SharedPtr& pInstance) const;
+        // Update Camera, Lightbulb, and Keyframe model ID's in the Editor Objects Scene
+        void updateEditorModelIDs();
 
         // Wireframe Rendering
         bool mHideWireframe = false;
