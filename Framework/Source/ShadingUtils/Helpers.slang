@@ -43,8 +43,8 @@ static const float M_1_PIf = 0.31830988618379f;
 _fn float2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 {
     float2 p;
-    const float r = sqrt(max(minRSq, rnd1));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(max(minRSq, rnd1));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     return p;
@@ -53,8 +53,8 @@ _fn float2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 _fn float3 sample_gauss(float rnd1, float rnd2)
 {
     float3 p;
-    const float r = sqrt(-2.f * log(1.f - rnd1));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(-2.f * log(1.f - rnd1));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     p.z = 0.0f;
@@ -109,8 +109,8 @@ _fn float3 uniform_sample_sphere(float rnd1, float rnd2)
 {
     float3 p;
     p.z = 2.0f * rnd1 - 1.0f;
-    const float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     return p;
@@ -120,8 +120,8 @@ _fn float3 uniform_sample_hemisphere(float rnd1, float rnd2)
 {
     float3 p;
     p.z = rnd1;
-    const float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     return p;
@@ -147,8 +147,8 @@ _fn uint rand_init(uint val0, uint val1, uint backoff = 16)
 
 _fn float rand_next(_ref(uint) s)
 {
-    const uint LCG_A = 1664525u;
-    const uint LCG_C = 1013904223u;
+    uint LCG_A = 1664525u;
+    uint LCG_C = 1013904223u;
     s = (LCG_A * s + LCG_C);
     return float(s & 0x00FFFFFF) / float(0x01000000);
 }
@@ -158,7 +158,7 @@ _fn float rand_next(_ref(uint) s)
 *******************************************************************/
 
 // Ideal specular refraction
-_fn float3 refract(const float3 I, const float3 N, float eta)
+_fn float3 refract(float3 I, float3 N, float eta)
 {
     float dNI = dot(N, I);
     float k = 1.0f - eta * eta * (1.0f - dNI * dNI);
@@ -198,7 +198,7 @@ void _fn reflectFrame(float3 n, float3 reflect, _ref(float3) t, _ref(float3) b)
 					Texturing routines
 *******************************************************************/
 
-float4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
+float4 _fn sampleTexture(Texture2D t, SamplerState s, ShadingAttribs attr)
 {
 #ifndef _MS_USER_DERIVATIVES
     return t.SampleBias(s, attr.UV, attr.lodBias);
@@ -208,7 +208,7 @@ float4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
 }
 
 #ifndef CUDA_CODE
-float4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs attr, int arrayIndex)
+float4 _fn sampleTexture(Texture2DArray t, SamplerState s, ShadingAttribs attr, int arrayIndex)
 {
 #ifndef _MS_USER_DERIVATIVES
     return t.SampleBias(s, float3(attr.UV, arrayIndex), attr.lodBias);
@@ -261,7 +261,7 @@ float3 _fn toLocal(in float3 v, in float3 t, in float3 b, in float3 n)
 
 void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref(float3) b)
 {
-	const float3 normalMap = normalize(texValue);
+	float3 normalMap = normalize(texValue);
 	n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
     // Orthogonalize tangent frame
     b = normalize(b - n * dot(b, n));

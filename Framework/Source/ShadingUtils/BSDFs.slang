@@ -49,8 +49,8 @@ Schlick's approximation for reflection of a dielectric media
 float _fn dielectricFresnelSchlick(float VdH, float IoR)
 {
     float R0 = (1.f - IoR) / (1.f + IoR);	R0 *= R0;
-    const float OneMinusCos = 1.f - VdH;
-    const float OneMinusCos2 = OneMinusCos*OneMinusCos;
+    float OneMinusCos = 1.f - VdH;
+    float OneMinusCos2 = OneMinusCos*OneMinusCos;
     return R0 + (1.f - R0) * OneMinusCos*OneMinusCos2*OneMinusCos2;	// to the power of 5
 }
 
@@ -60,8 +60,8 @@ between two dielectrics
 */
 float _fn dielectricFresnelFast(float NdE, float NdL, float IoR)
 {
-    const float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Transmitted-to-incident wave ratio, perpendicular component
-    const float Rp = (IoR * NdE - NdL) / (IoR * NdE + NdL);	// Transmitted-to-incident wave ratio, parallel component
+    float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Transmitted-to-incident wave ratio, perpendicular component
+    float Rp = (IoR * NdE - NdL) / (IoR * NdE + NdL);	// Transmitted-to-incident wave ratio, parallel component
     return (Rs * Rs + Rp * Rp) * .5f;						// Total amplitude of the transmitted wave
 }
 
@@ -71,15 +71,15 @@ between two dielectrics
 */
 float _fn dielectricFresnel(in float NdE, float IoR)
 {
-    const float realIoR = (NdE >= 0.f) ? 1.f / IoR : IoR;
+    float realIoR = (NdE >= 0.f) ? 1.f / IoR : IoR;
     // Perform a refraction
-    const float NdL2 = 1.f - realIoR * realIoR * (1.f - NdE * NdE);
+    float NdL2 = 1.f - realIoR * realIoR * (1.f - NdE * NdE);
     if(NdL2 <= 0.f)	// Total internal reflection case
         return 1.f;
-    const float NdL = sqrt(NdL2);
+    float NdL = sqrt(NdL2);
     NdE = abs(NdE);		// Wrap the incident direction
-    const float Rp = (IoR * NdL - NdE) / (IoR * NdL + NdE);	// Reflected-to-incident wave ratio, parallel component
-    const float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Reflected-to-incident wave ratio, parallel component
+    float Rp = (IoR * NdL - NdE) / (IoR * NdL + NdE);	// Reflected-to-incident wave ratio, parallel component
+    float Rs = (NdE - IoR * NdL) / (NdE + IoR * NdL);	// Reflected-to-incident wave ratio, parallel component
     return (Rp * Rp + Rs * Rs) * .5f;						// Total amplitude of the reflected wave
 }
 
@@ -89,13 +89,13 @@ between a dielectric (usually air) and a conductive media
 */
 float _fn conductorFresnel(in float NdE, float IoR, float Kappa)
 {
-    const float Kappa2 = Kappa * Kappa;
-    const float TotalIoR2 = IoR * IoR + Kappa2;	// Total magnitude of IoR: Real plus complex parts of IoR
+    float Kappa2 = Kappa * Kappa;
+    float TotalIoR2 = IoR * IoR + Kappa2;	// Total magnitude of IoR: Real plus complex parts of IoR
     NdE = saturate(NdE);			// No refraction allowed
-    const float NdE2 = NdE * NdE;
-    const float ReducedNdE2 = TotalIoR2 * NdE2;
-    const float Rp2 = (ReducedNdE2 - IoR * NdE * 2.f + 1.f) / (ReducedNdE2 + IoR * NdE * 2.f + 1.f);	// Reflected-to-incident wave ratio, perpendicular component
-    const float Rs2 = (TotalIoR2 - IoR * NdE * 2.f + NdE2) / (TotalIoR2 + IoR * NdE * 2.f + NdE2);		// Reflected-to-incident wave ratio, parallel component
+    float NdE2 = NdE * NdE;
+    float ReducedNdE2 = TotalIoR2 * NdE2;
+    float Rp2 = (ReducedNdE2 - IoR * NdE * 2.f + 1.f) / (ReducedNdE2 + IoR * NdE * 2.f + 1.f);	// Reflected-to-incident wave ratio, perpendicular component
+    float Rs2 = (TotalIoR2 - IoR * NdE * 2.f + NdE2) / (TotalIoR2 + IoR * NdE * 2.f + NdE2);		// Reflected-to-incident wave ratio, parallel component
     return (Rp2 + Rs2) * .5f;					// Total amplitude of the reflected wave
 }
 
@@ -116,10 +116,10 @@ Blinn-Phong normal distribution function (NDF).
 */
 float _fn evalPhongDistribution(in float3 N, in float3 V, in float3 L, in float roughness)
 {
-    const float spec_power = convertRoughnessToShininess(roughness);
-    const float3 H = normalize(L + V);
-    const float NoH = max(0.f, dot(N, H));
-    const float normalization = (spec_power + 2.f) / (2.f * M_PIf);
+    float spec_power = convertRoughnessToShininess(roughness);
+    float3 H = normalize(L + V);
+    float NoH = max(0.f, dot(N, H));
+    float normalization = (spec_power + 2.f) / (2.f * M_PIf);
     return pow(NoH, spec_power) * normalization;
 }
 
@@ -128,21 +128,21 @@ Beckmann normal distribution function (NDF).
 */
 float _fn evalBeckmannDistribution(float3 N, float3 H, in float roughness)
 {
-    const float a2 = roughness * roughness;
+    float a2 = roughness * roughness;
     // dot products that we need
-    const float NoH = dot(N, H);
-    const float NoH2 = NoH * NoH;
+    float NoH = dot(N, H);
+    float NoH2 = NoH * NoH;
     // Compute Beckmann distribution
-    const float exponent = max(0.f, (1.f - NoH2) / (a2 * NoH2));
+    float exponent = max(0.f, (1.f - NoH2) / (a2 * NoH2));
     return exp(-exponent) / (M_PIf * a2 * NoH2 * NoH2);
 }
 
 float _fn evalBeckmannDistribution(float3 H, float2 rgns)
 {
-    const float NoH2 = H.z * H.z;
-    const float2 Hproj = float2(H.x, H.y);
+    float NoH2 = H.z * H.z;
+    float2 Hproj = float2(H.x, H.y);
     // Compute Beckmann distribution
-    const float exponent = dot(Hproj / (rgns*rgns), Hproj) / NoH2;
+    float exponent = dot(Hproj / (rgns*rgns), Hproj) / NoH2;
     return exp(-exponent) / (M_PIf * rgns.x * rgns.y * NoH2 * NoH2);
 }
 
@@ -165,8 +165,8 @@ This approximation works fine for G smith correlated and uncorrelated
 float3 _fn getBeckmannDominantDir(float3 N, float3 R,
     float roughness)
 {
-    const float smoothness = clamp(1.f - roughness, 0.0f, 1.0f);
-    const float lerpFactor = smoothness * (sqrt(smoothness) + roughness);
+    float smoothness = clamp(1.f - roughness, 0.0f, 1.0f);
+    float lerpFactor = smoothness * (sqrt(smoothness) + roughness);
     // The result is not normalized as we fetch in a cubemap
     return lerp(N, R, lerpFactor);
 }
@@ -178,9 +178,9 @@ GGX normal distribution function (NDF).
 float _fn evalGGXDistribution(float3 N, float3 H, float roughness)
 {
     // This doesn't look correct, so disabled    
-    const float a2 = roughness * roughness;
+    float a2 = roughness * roughness;
     // dot products that we need
-    const float NoH = saturate(dot(N, H));
+    float NoH = saturate(dot(N, H));
     // D term
     float D_denom = (NoH * a2 - NoH) * NoH + 1.0f;
     D_denom = M_PIf * D_denom * D_denom;
@@ -190,13 +190,13 @@ float _fn evalGGXDistribution(float3 N, float3 H, float roughness)
 float _fn evalGGXDistribution(float3 H, float2 rgns)
 {
     // Numerically robust (w.r.t rgns=0) implementation of anisotropic GGX
-    const float anisoU = rgns.y < rgns.x ? rgns.y / rgns.x : 1.f;
-    const float anisoV = rgns.x < rgns.y ? rgns.x / rgns.y : 1.f;
-    const float r = min(rgns.x, rgns.y);
-    const float NoH2 = H.z * H.z;
-    const float2 Hproj = float2(H.x, H.y);
-    const float exponent = dot(Hproj / float2(anisoU*anisoU, anisoV*anisoV), Hproj);
-    const float root = NoH2 * r*r + exponent;
+    float anisoU = rgns.y < rgns.x ? rgns.y / rgns.x : 1.f;
+    float anisoV = rgns.x < rgns.y ? rgns.x / rgns.y : 1.f;
+    float r = min(rgns.x, rgns.y);
+    float NoH2 = H.z * H.z;
+    float2 Hproj = float2(H.x, H.y);
+    float exponent = dot(Hproj / float2(anisoU*anisoU, anisoV*anisoV), Hproj);
+    float root = NoH2 * r*r + exponent;
     return r*r / (M_PIf * anisoU * anisoV * root * root);
 }
 
@@ -210,12 +210,12 @@ Computes the intermediate effective microfacet roughness observed from a particu
 \param[in] rghns original anisotropic roughness of the microfacet BSDF
 returns effective visible roughness
 */
-float _fn effectiveVisibleRoughness(const in float3 dir, const in float2 rghns)
+float _fn effectiveVisibleRoughness(float3 dir, float2 rghns)
 {
-    const float recipSinThSq = 1.f / (1.f - dir.z * dir.z);
-    const float2 dirPlane = float2(dir.x, dir.y);
-    const float2 cosSinPhiSq = dirPlane * dirPlane * recipSinThSq;
-    const float2 res = rghns * rghns * cosSinPhiSq;
+    float recipSinThSq = 1.f / (1.f - dir.z * dir.z);
+    float2 dirPlane = float2(dir.x, dir.y);
+    float2 cosSinPhiSq = dirPlane * dirPlane * recipSinThSq;
+    float2 res = rghns * rghns * cosSinPhiSq;
     return sqrt(res.x + res.y);
 }
 
@@ -227,27 +227,27 @@ Computes the Smith'67 shadowing or masking term from a direction.
 \param[in] ndfType type of NDF. Only Beckmann and GGX are supported so far
 returns amount of visible microfacets
 */
-float _fn GSmith(const in float3 dir, const in float3 h, const in float2 rghns, uint ndfType)
+float _fn GSmith(float3 dir, float3 h, float2 rghns, uint ndfType)
 {
     if(dot(dir, h) * dir.z <= 0.f)
         return 0.f;
-    const float sinThSq = 1.f - dir.z * dir.z;
+    float sinThSq = 1.f - dir.z * dir.z;
     if(sinThSq <= 0.f)
         return 1.f;
-    const float recipSlope = sqrt(sinThSq) / dir.z;
-    const float alpha = effectiveVisibleRoughness(dir, rghns);
+    float recipSlope = sqrt(sinThSq) / dir.z;
+    float alpha = effectiveVisibleRoughness(dir, rghns);
     if(ndfType == NDFBeckmann)
     {
         // Use the Beckmann G fit from [Walter07]
-        const float a = 1.f / (alpha * recipSlope);
+        float a = 1.f / (alpha * recipSlope);
         if(a > 1.6f)
             return 1.f;
-        const float aSq = a*a;
+        float aSq = a*a;
         return (3.535f * a + 2.181f * aSq) / (1.f + 2.276f * a + 2.577f * aSq);
     }
 
     // Otherwise it's GGX, use GGX shadowing/masking
-    const float isectRoot = alpha * recipSlope;
+    float isectRoot = alpha * recipSlope;
     return 2.f / (1.f + length(float2(1.f, isectRoot)));
 }
 
@@ -258,8 +258,8 @@ float _fn evalMicrofacetTerms(float3 T, float3 B, float3 N,
     float3 h, float3 V, float3 L,
     float2 roughness, uint ndfType, bool transmissive)
 {
-    const float3 lTg = float3(dot(T, L), dot(B, L), dot(N, L));
-    const float3 vTg = float3(dot(T, V), dot(B, V), dot(N, V));
+    float3 lTg = float3(dot(T, L), dot(B, L), dot(N, L));
+    float3 vTg = float3(dot(T, V), dot(B, V), dot(N, V));
 
     /* If it's not transmission, they should be on the same side of the hemisphere */
     if(!transmissive && lTg.z*vTg.z <= 0.f)
@@ -349,7 +349,7 @@ float _fn sampleGGXDistribution(
 {
 	float alphaSqr = roughness.x * roughness.x;
 
-    const bool perfectSpecular = alphaSqr <= 1e-6f;
+    bool perfectSpecular = alphaSqr <= 1e-6f;
 
     if(perfectSpecular)
     {

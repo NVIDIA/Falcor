@@ -128,7 +128,7 @@ inline void _fn prepareLightAttribs(LightData Light, ShadingAttribs ShAttr, floa
 		/* Evaluate various attenuation factors: cosine, 1/r^2, etc. */
 		float Atten = 1.f;
 
-		const float cosTheta = -dot(LightAttr.L, Light.worldDir);	// cos of angle of light orientation with outgoing direction
+		float cosTheta = -dot(LightAttr.L, Light.worldDir);	// cos of angle of light orientation with outgoing direction
         if(Light.type == LightArea)			// Cosine attenuation
         {
 			Atten = max(0.f, cosTheta) * Light.surfaceArea;
@@ -176,7 +176,7 @@ inline void _fn prepareLightAttribs(LightData Light, ShadingAttribs ShAttr, floa
 /**
     This routine samples the light source.
 */
-void _fn sampleLight(float3 shadingHitPos, LightData lData, const float3 rSample, _ref(LightAttribs) lAttr)
+void _fn sampleLight(float3 shadingHitPos, LightData lData, float3 rSample, _ref(LightAttribs) lAttr)
 {
 	// Sample the light based on its type: point, directional, or area
 	switch (lData.type)
@@ -228,7 +228,7 @@ void _fn sampleLight(float3 shadingHitPos, LightData lData, const float3 rSample
 				optix::bufferId<int3, 1> indices(lData.indexPtr.ptr);
 				optix::bufferId<float3, 1> vertices(lData.vertexPtr.ptr);
 				// Retrieve indices
-				const int3 pId = indices[index];
+				int3 pId = indices[index];
 				// Get vertices pointed by the corresponding index
 				float3 p0 = vertices[pId.x];
 				float3 p1 = vertices[pId.y];
@@ -237,7 +237,7 @@ void _fn sampleLight(float3 shadingHitPos, LightData lData, const float3 rSample
 				int* indices = (int*)(lData.indexPtr.ptr);
 				float* vertices = (float*)(lData.vertexPtr.ptr);
 				// Retrieve indices
-				const int3 pId = int3(indices[index * 3 + 0], indices[index * 3 + 1], indices[index * 3 + 2]);
+				int3 pId = int3(indices[index * 3 + 0], indices[index * 3 + 1], indices[index * 3 + 2]);
 				// Get vertices pointed by the corresponding index
 				float3 p0 = float3(vertices[pId.x * 3 + 0], vertices[pId.x * 3 + 1], vertices[pId.x * 3 + 2]);
 				float3 p1 = float3(vertices[pId.y * 3 + 0], vertices[pId.y * 3 + 1], vertices[pId.y * 3 + 2]);
@@ -251,7 +251,7 @@ void _fn sampleLight(float3 shadingHitPos, LightData lData, const float3 rSample
 
 				// Sample a point on the triangle mesh using barycentric coordinates
 				float a = sqrt(rSample.x);
-				const float2 bary = float2(1.f - a, a * rSample.y);
+				float2 bary = float2(1.f - a, a * rSample.y);
 
 				lAttr.P = p0 * bary.x + p1 * bary.y + p2 * (1.f - bary.x - bary.y);
 
@@ -281,7 +281,7 @@ void _fn sampleLight(float3 shadingHitPos, LightData lData, const float3 rSample
 /**
 This routine samples a rectangular area light source in a stratified way.
 */
-void _fn stratifiedSampleRectangularAreaLight(float3 shadingHitPos, LightData lData, const float2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
+void _fn stratifiedSampleRectangularAreaLight(float3 shadingHitPos, LightData lData, float2 rSample, int x, int y, int numStrataX, int numStrataY, _ref(LightAttribs) lAttr)
 {
 	if (lData.type != LightArea)
 		return;
