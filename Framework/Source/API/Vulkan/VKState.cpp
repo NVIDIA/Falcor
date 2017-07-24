@@ -28,6 +28,7 @@
 #include "Framework.h"
 #include "VKState.h"
 #include "API/FBO.h"
+#include "API/Device.h"
 
 namespace Falcor
 {
@@ -529,7 +530,7 @@ namespace Falcor
             depthDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
             depthDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
             depthDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-            depthDesc.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthDesc.initialLayout = (gpDevice->getDeviceVendorID() == 0x10DE) ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             depthDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
 

@@ -153,6 +153,7 @@ namespace Falcor
         };
         uint32_t getVkMemoryType(MemoryType falcorType, uint32_t memoryTypeBits) const;
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
+        uint32_t  getDeviceVendorID() const;
 #endif
     private:
         struct ResourceRelease
@@ -186,7 +187,6 @@ namespace Falcor
         QueryHeap::SharedPtr mTimestampQueryHeap;
         double mGpuTimestampFrequency;
 		bool mRgb32FloatSupported = true;
-
         std::vector<CommandQueueHandle> mCmdQueues[kQueueTypeCount];
 
         // API specific functions
