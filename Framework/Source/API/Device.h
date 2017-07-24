@@ -57,7 +57,7 @@ namespace Falcor
         struct Desc
         {
             ResourceFormat colorFormat = ResourceFormat::BGRA8UnormSrgb;    ///< The color buffer format
-            ResourceFormat depthFormat = ResourceFormat::D24UnormS8;        ///< The depth buffer format
+            ResourceFormat depthFormat = ResourceFormat::D32Float;          ///< The depth buffer format
             int apiMajorVersion = DEFAULT_API_MAJOR_VERSION;                ///< Requested API major version. Context creation fails if this version is not supported.
             int apiMinorVersion = DEFAULT_API_MINOR_VERSION;                ///< Requested API minor version. Context creation fails if this version is not supported.
             bool useDebugContext = false;                                   ///< create a debug context. NOTE: Debug configuration always creates a debug context
