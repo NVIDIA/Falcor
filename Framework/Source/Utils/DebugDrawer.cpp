@@ -219,7 +219,7 @@ namespace Falcor
         VertexLayout::SharedPtr pVertexLayout = VertexLayout::create();
         pVertexLayout->addBufferLayout(0, pBufferLayout);
 
-        mpVao = Vao::create({ pVertexBuffer }, pVertexLayout, nullptr, ResourceFormat::Unknown, Vao::Topology::LineList);
+        mpVao = Vao::create(Vao::Topology::LineList, pVertexLayout, { pVertexBuffer });
 
         mVertexData.resize(maxVertices);
     }

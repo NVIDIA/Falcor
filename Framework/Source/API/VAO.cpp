@@ -51,14 +51,24 @@ namespace Falcor
         return true;
     }
 
-    Vao::Vao(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat, Topology topology) : mIbFormat(ibFormat), mpVBs(pVBs), mpIB(pIB), mpVertexLayout(pLayout), mTopology(topology) {}
-
-
-    Vao::SharedPtr Vao::create(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat, Topology topology)
+    Vao::Vao(const BufferVec& pVBs, const VertexLayout::SharedPtr& pLayout, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat, Topology topology)
+        : mIbFormat(ibFormat)
+        , mpVBs(pVBs)
+        , mpIB(pIB)
+        , mpVertexLayout(pLayout)
+        , mTopology(topology) 
     {
-        if(checkVaoParams(pVBs, pLayout.get(), pIB.get(), ibFormat) == false)
+    }
+
+
+    Vao::SharedPtr Vao::create(Topology topology, const VertexLayout::SharedPtr& pLayout, const BufferVec& pVBs, const Buffer::SharedPtr& pIB, ResourceFormat ibFormat)
+    {
+        if (pLayout != nullptr)
         {
-            return nullptr;
+            if(checkVaoParams(pVBs, pLayout.get(), pIB.get(), ibFormat) == false)
+            {
+                return nullptr;
+            }
         }
 
         SharedPtr pVao = SharedPtr(new Vao(pVBs, pLayout, pIB, ibFormat, topology));

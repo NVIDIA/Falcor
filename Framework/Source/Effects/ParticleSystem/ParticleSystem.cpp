@@ -150,7 +150,7 @@ namespace Falcor
         Vao::BufferVec bufferVec;
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         Vao::Topology topology = Vao::Topology::TriangleStrip;
-        mDrawResources.pState->setVao(Vao::create(bufferVec, pLayout, nullptr, ResourceFormat::R32Uint, topology));
+        mDrawResources.pState->setVao(Vao::create(topology, pLayout, bufferVec));
 
         // Save bind locations for resourced updated during draw
         mBindLocations.simulateCB = getBufferBindLocation(pSimulateReflect.get(), "PerFrame");
