@@ -118,6 +118,8 @@
 #define LightArea            2    ///< Area light source, potentially with arbitrary geometry
 //#define LightVolume        3    ///< Volumetric light source
 
+#define MAX_LIGHT_SOURCES 16
+
 /*******************************************************************
                     Material
 *******************************************************************/

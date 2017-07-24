@@ -345,6 +345,12 @@ namespace Falcor
         {
             if (pGui->addButton("Add Point Light"))
             {
+                if (mpScene->getLightCount() >= MAX_LIGHT_SOURCES)
+                {
+                    msgBox("There cannot be more than 16 lights at a time in a scene!");
+                    return;
+                }
+
                 auto pNewLight = PointLight::create();
 
                 // Place in front of camera
@@ -376,6 +382,12 @@ namespace Falcor
         {
             if (pGui->addButton("Add Directional Light"))
             {
+                if (mpScene->getLightCount() >= MAX_LIGHT_SOURCES)
+                {
+                    msgBox("There cannot be more than 16 lights at a time in a scene!");
+                    return;
+                }
+
                 auto pNewLight = DirectionalLight::create();
                 mpScene->addLight(pNewLight);
 

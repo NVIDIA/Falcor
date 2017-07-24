@@ -35,10 +35,6 @@
 
 #include "HostDeviceData.h"
 
-#ifndef MAX_LIGHT_SOURCES
-#define MAX_LIGHT_SOURCES 16
-#endif
-
 cbuffer InternalPerFrameCB : register(b10)
 {
     CameraData gCam;
