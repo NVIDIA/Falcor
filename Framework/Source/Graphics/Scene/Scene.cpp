@@ -59,7 +59,6 @@ namespace Falcor
     {
         // Reset all global id counters recursively
         Model::resetGlobalIdCounter();
-        Light::resetGlobalIdCounter();
 
         mpMaterialHistory = MaterialHistory::create();
     }
