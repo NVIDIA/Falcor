@@ -330,7 +330,7 @@ void SimpleDeferred::onResizeSwapChain()
     // create G-Buffer
     const glm::vec4 clearColor(0.f, 0.f, 0.f, 0.f);
     Fbo::Desc fboDesc;
-    fboDesc.setColorTarget(0, Falcor::ResourceFormat::RGBA16Float).setColorTarget(1, Falcor::ResourceFormat::RGBA16Float).setColorTarget(2, Falcor::ResourceFormat::RGBA16Float).setDepthStencilTarget(Falcor::ResourceFormat::D24UnormS8);
+    fboDesc.setColorTarget(0, Falcor::ResourceFormat::RGBA16Float).setColorTarget(1, Falcor::ResourceFormat::RGBA16Float).setColorTarget(2, Falcor::ResourceFormat::RGBA16Float).setDepthStencilTarget(Falcor::ResourceFormat::D32Float);
     mpGBufferFbo = FboHelper::create2D(width, height, fboDesc);
 }
 
