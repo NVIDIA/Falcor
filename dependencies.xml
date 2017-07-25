@@ -9,5 +9,6 @@
         <dependency name="vulkansdk" version="1.0.51.0" linkPath="Framework/Externals/VulkanSDK"/>
         <dependency name="rapidjson" version="0.1" linkPath="Framework/Externals/RapidJson"/>
         <dependency name="slang" version="0.7.8" linkPath="Framework/Externals/Slang"/>
+        <dependency name="falcor_media" version="1.0" linkPath="Media"/>
     </platform>
 </project>
