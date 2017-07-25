@@ -62,16 +62,13 @@ namespace Falcor
 
     size_t getBufferDataAlignment(const Buffer* pBuffer)
     {
-        switch (pBuffer->getBindFlags())
-        {
-        case Buffer::BindFlags::Constant:
-            return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
-        case Buffer::BindFlags::None:
-            return D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
-        default:
-            return 1;
-        }
-    }
+		// This in order of the alignment size
+		const auto& bindFlags = pBuffer->getBindFlags();
+		if (is_set(bindFlags, Buffer::BindFlags::Constant)) return D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+		if (is_set(bindFlags, Buffer::BindFlags::Index)) return sizeof(uint32_t); // This actually depends on the size of the index, but we can handle losing 2 bytes
+
+		return D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT;
+	}
 
     void* mapBufferApi(const Buffer::ApiHandle& apiHandle, size_t size)
     {

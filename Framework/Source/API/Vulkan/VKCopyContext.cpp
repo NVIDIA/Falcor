@@ -129,6 +129,41 @@ namespace Falcor
         }
     }
 
+    static VkPipelineStageFlags getShaderStageMask(Resource::State state, bool src)
+    {
+        switch (state)
+        {
+        case Resource::State::Undefined:
+        case Resource::State::PreInitialized:
+        case Resource::State::Common:
+            assert(src);
+            return src ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : (VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        case Resource::State::VertexBuffer:
+        case Resource::State::IndexBuffer:
+            return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+        case Resource::State::UnorderedAccess:
+        case Resource::State::ConstantBuffer:
+        case Resource::State::ShaderResource:
+            return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT; // #OPTME Assume the worst
+        case Resource::State::RenderTarget:
+            return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        case Resource::State::DepthStencil:
+            return src ? VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT : VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        case Resource::State::IndirectArg:
+            return VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        case Resource::State::CopyDest:
+        case Resource::State::CopySource:
+        case Resource::State::ResolveDest:
+        case Resource::State::ResolveSource:
+            return VK_PIPELINE_STAGE_TRANSFER_BIT;
+        case Resource::State::Present:
+            return src ? (VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        default:
+            should_not_get_here();
+            return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        }
+    }
+
     void CopyContext::bindDescriptorHeaps()
     {
     }
@@ -226,8 +261,7 @@ namespace Falcor
                 barrier.srcAccessMask = getAccessMask(pResource->mState);
                 barrier.dstAccessMask = getAccessMask(newState);
 
-                // #OPTME: Group barriers into a single call. Do we always need to use VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT?
-                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), getShaderStageMask(pResource->mState, true), getShaderStageMask(newState, false), 0, 0, nullptr, 0, nullptr, 1, &barrier);
             }
             else
             {
@@ -241,7 +275,7 @@ namespace Falcor
                 barrier.offset = pBuffer->getGpuAddressOffset();
                 barrier.size = pBuffer->getSize();
 
-                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), getShaderStageMask(pResource->mState, true), getShaderStageMask(newState, false), 0, 0, nullptr, 1, &barrier, 0, nullptr);
             }
 
 

@@ -61,8 +61,8 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
     uint levels;
     gTexColor.GetDimensions(0, texDim.x, texDim.y, levels);
 
-    const float2 pos = texC * texDim;
-    const int2 ipos = int2(pos);
+    float2 pos = texC * texDim;
+    int2 ipos = int2(pos);
 
     // Fetch the current pixel color and compute the color bounding box
     // Details here: http://www.gdcvault.com/play/1023521/From-the-Lab-Bench-Real
@@ -80,11 +80,11 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
         colorVar += c * c;
     }
 
-    const float oneOverNine = 1.0 / 9.0;
+    float oneOverNine = 1.0 / 9.0;
     colorAvg *= oneOverNine;
     colorVar *= oneOverNine;
 
-    const float3 sigma = sqrt(max(0.0f, colorVar - colorAvg * colorAvg));
+    float3 sigma = sqrt(max(0.0f, colorVar - colorAvg * colorAvg));
     float3 colorMin = colorAvg - gColorBoxSigma * sigma;
     float3 colorMax = colorAvg + gColorBoxSigma * sigma;    
 
@@ -93,7 +93,7 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
     [unroll]
     for (int a = 0; a < 8; a++) 
     {
-        const float2 m = gTexMotionVec.Load(int3(ipos + offset[a], 0)).rg;
+        float2 m = gTexMotionVec.Load(int3(ipos + offset[a], 0)).rg;
         motion = dot(m, m) > dot(motion, motion) ? m : motion;   
     }
 

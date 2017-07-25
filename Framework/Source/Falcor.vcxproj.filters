@@ -480,9 +480,6 @@
     <ClCompile Include="API\Vulkan\LowLevel\VKResourceAllocator.cpp">
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\SlangSupport.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="API\Vulkan\LowLevel\VKDescriptorPool.cpp">
       <Filter>API\Vulkan\LowLevel</Filter>
     </ClCompile>

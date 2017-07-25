@@ -70,7 +70,8 @@ namespace Falcor
 
     GraphicsStateObject::SharedPtr GraphicsState::getGSO(const GraphicsVars* pVars)
     {
-        if (mpProgram && mpVao)
+        assert(mpVao);
+        if (mpProgram && mpVao->getVertexLayout() != nullptr)
         {
             mpVao->getVertexLayout()->addVertexAttribDclToProg(mpProgram.get());
         }

@@ -30,7 +30,7 @@
 
 SamplerComparisonState gCsmCompareSampler;
 
-int getCascadeCount(const CsmData csmData)
+int getCascadeCount(CsmData csmData)
 {
 #ifdef _CSM_CASCADE_COUNT
     return _CSM_CASCADE_COUNT;
@@ -39,7 +39,7 @@ int getCascadeCount(const CsmData csmData)
 #endif
 }
 
-uint32_t getFilterMode(const CsmData csmData)
+uint32_t getFilterMode(CsmData csmData)
 {
 #ifdef _CSM_FILTER_MODE
     return _CSM_FILTER_MODE;
@@ -48,7 +48,7 @@ uint32_t getFilterMode(const CsmData csmData)
 #endif
 }
 
-int getCascadeIndex(const CsmData csmData, float depthCamClipSpace)
+int getCascadeIndex(CsmData csmData, float depthCamClipSpace)
 {
     for(int i = 1; i < getCascadeCount(csmData); i++)
     {
@@ -85,7 +85,7 @@ float3 getCascadeColor(uint32_t cascade)
     }
 }
 #if 0
-float calcReceiverPlaneDepthBias(const CsmData csmData, const float3 shadowPos)
+float calcReceiverPlaneDepthBias(CsmData csmData, float3 shadowPos)
 {
     float3 posDX = dFdxFine(shadowPos);
     float3 posDY = dFdyFine(shadowPos);
@@ -106,7 +106,7 @@ float calcReceiverPlaneDepthBias(const CsmData csmData, const float3 shadowPos)
     return min(bias, csmData.maxReceiverPlaneDepthBias);
 }
 
-float3 calcNormalOffset(const CsmData csmData, float3 normal, uint32_t cascadeIndex)
+float3 calcNormalOffset(CsmData csmData, float3 normal, uint32_t cascadeIndex)
 {
     // Need to move more when ndotl == 0
     float3 N = normalize(normal);
@@ -127,13 +127,13 @@ float2 applyEvsmExponents(float depth, float2 exponents)
     return expDepth;
 }
 
-float csmFilterUsingHW(const CsmData csmData, const float2 texC, float depthRef, uint32_t cascadeIndex)
+float csmFilterUsingHW(CsmData csmData, float2 texC, float depthRef, uint32_t cascadeIndex)
 {
     float res = csmData.shadowMap.SampleCmpLevelZero(gCsmCompareSampler, float3(texC, cascadeIndex), depthRef).r;
     return saturate(res);
 }
 
-float csmFixedSizePcf(const CsmData csmData, const float2 texC, float depthRef, uint32_t cascadeIndex)
+float csmFixedSizePcf(CsmData csmData, float2 texC, float depthRef, uint32_t cascadeIndex)
 {
     float3 dim;
     csmData.shadowMap.GetDimensions(dim.x, dim.y, dim.z);
@@ -153,7 +153,7 @@ float csmFixedSizePcf(const CsmData csmData, const float2 texC, float depthRef, 
     return res / (csmData.pcfKernelWidth * csmData.pcfKernelWidth);
 }
 
-float csmStochasticFilter(const CsmData csmData, const float2 texC, float depthRef, uint32_t cascadeIndex, float2 posSxy)
+float csmStochasticFilter(CsmData csmData, float2 texC, float depthRef, uint32_t cascadeIndex, float2 posSxy)
 {
     float3 dim;
     csmData.shadowMap.GetDimensions(dim.x, dim.y, dim.z);
@@ -211,7 +211,7 @@ float calcChebyshevUpperBound(float2 moments, float depth, float lightBleedingRe
     return res;
 }
 
-float csmVsmFilter(const CsmData csmData, const float2 texC, float sampleDepth, uint32_t cascadeIndex, bool calcDrv, inout float2 drvX, inout float2 drvY)
+float csmVsmFilter(CsmData csmData, float2 texC, float sampleDepth, uint32_t cascadeIndex, bool calcDrv, inout float2 drvX, inout float2 drvY)
 {
     if(calcDrv)
     {
@@ -224,7 +224,7 @@ float csmVsmFilter(const CsmData csmData, const float2 texC, float sampleDepth, 
     return pMax;
 }
 
-float csmEvsmFilter(const CsmData csmData, const float2 texC, float sampleDepth, uint32_t cascadeIndex, bool calcDrv, inout float2 drvX, inout float2 drvY)
+float csmEvsmFilter(CsmData csmData, float2 texC, float sampleDepth, uint32_t cascadeIndex, bool calcDrv, inout float2 drvX, inout float2 drvY)
 {
     if(calcDrv)
     {

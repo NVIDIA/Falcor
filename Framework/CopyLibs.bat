@@ -15,7 +15,7 @@ robocopy "%FALCOR_PROJECT_DIR%\Externals\FFMpeg\bin\%2" %3  *.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\D3DCompiler\%2" %3  D3Dcompiler_47.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\OptiX\bin64" %3  *.dll /r:0 >nul
 robocopy "%FALCOR_PROJECT_DIR%\Externals\openvr\bin\win64" %3  openvr_api.dll /r:0 >nul
-robocopy "%FALCOR_PROJECT_DIR%\Externals\glslang" %3  slang-glslang.dll /r:0 >nul
+robocopy "%FALCOR_PROJECT_DIR%\Externals\Slang\bin\windows-x64\release" %3  *.dll /r:0 >nul
 
 rem copy and overwrite internal files
 for /r "%FALCOR_PROJECT_DIR%\..\..\Internals\" %%f in (*.dll) do @robocopy "%%~df%%"~pf %3 %%~nf%%~xf /r:0 >nul

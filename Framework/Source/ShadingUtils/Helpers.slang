@@ -43,8 +43,8 @@ static const float M_1_PIf = 0.31830988618379f;
 _fn float2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 {
     float2 p;
-    const float r = sqrt(max(minRSq, rnd1));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(max(minRSq, rnd1));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     return p;
@@ -53,8 +53,8 @@ _fn float2 sample_disk(float rnd1, float rnd2, float minRSq = 0.0f)
 _fn float3 sample_gauss(float rnd1, float rnd2)
 {
     float3 p;
-    const float r = sqrt(-2.f * log(1.f - rnd1));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(-2.f * log(1.f - rnd1));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     p.z = 0.0f;
@@ -109,8 +109,8 @@ _fn float3 uniform_sample_sphere(float rnd1, float rnd2)
 {
     float3 p;
     p.z = 2.0f * rnd1 - 1.0f;
-    const float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     return p;
@@ -120,8 +120,8 @@ _fn float3 uniform_sample_hemisphere(float rnd1, float rnd2)
 {
     float3 p;
     p.z = rnd1;
-    const float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
-    const float phi = 2.0f * M_PIf * rnd2;
+    float r = sqrt(max(0.0f, 1.0f - p.z * p.z));
+    float phi = 2.0f * M_PIf * rnd2;
     p.x = r * cos(phi);
     p.y = r * sin(phi);
     return p;
@@ -147,8 +147,8 @@ _fn uint rand_init(uint val0, uint val1, uint backoff = 16)
 
 _fn float rand_next(_ref(uint) s)
 {
-    const uint LCG_A = 1664525u;
-    const uint LCG_C = 1013904223u;
+    uint LCG_A = 1664525u;
+    uint LCG_C = 1013904223u;
     s = (LCG_A * s + LCG_C);
     return float(s & 0x00FFFFFF) / float(0x01000000);
 }
@@ -158,7 +158,7 @@ _fn float rand_next(_ref(uint) s)
 *******************************************************************/
 
 // Ideal specular refraction
-_fn float3 refract(const float3 I, const float3 N, float eta)
+_fn float3 refract(float3 I, float3 N, float eta)
 {
     float dNI = dot(N, I);
     float k = 1.0f - eta * eta * (1.0f - dNI * dNI);
@@ -178,7 +178,7 @@ _fn float3 refract(const float3 I, const float3 N, float eta)
 					Geometric routines
 *******************************************************************/
 
-void _fn createTangentFrame(in const float3 normal, _ref(float3) bitangent)
+void _fn createTangentFrame(float3 normal, _ref(float3) bitangent)
 {
 	if(abs(normal.x) > abs(normal.y))
 		bitangent = float3(normal.z, 0.f, -normal.x) / length(float2(normal.x, normal.z));
@@ -198,7 +198,7 @@ void _fn reflectFrame(float3 n, float3 reflect, _ref(float3) t, _ref(float3) b)
 					Texturing routines
 *******************************************************************/
 
-float4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
+float4 _fn sampleTexture(Texture2D t, SamplerState s, ShadingAttribs attr)
 {
 #ifndef _MS_USER_DERIVATIVES
     return t.SampleBias(s, attr.UV, attr.lodBias);
@@ -208,7 +208,7 @@ float4 _fn sampleTexture(Texture2D t, SamplerState s, const ShadingAttribs attr)
 }
 
 #ifndef CUDA_CODE
-float4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs attr, int arrayIndex)
+float4 _fn sampleTexture(Texture2DArray t, SamplerState s, ShadingAttribs attr, int arrayIndex)
 {
 #ifndef _MS_USER_DERIVATIVES
     return t.SampleBias(s, float3(attr.UV, arrayIndex), attr.lodBias);
@@ -218,7 +218,7 @@ float4 _fn sampleTexture(Texture2DArray t, SamplerState s, const ShadingAttribs 
 }
 #endif
 
-float4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, in const ShadingAttribs attr, in float4 defaultValue)
+float4 _fn evalTex(in uint32_t hasTexture, Texture2D tex, SamplerState s, ShadingAttribs attr, in float4 defaultValue)
 {
 #ifndef _MS_DISABLE_TEXTURES
 	if(hasTexture != 0)
@@ -230,7 +230,7 @@ float4 _fn evalTex(in uint32_t hasTexture, in const Texture2D tex, SamplerState 
 	return defaultValue;
 }
 
-float4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, SamplerState s, float4 color, in const ShadingAttribs attr)
+float4 _fn evalWithColor(in uint32_t hasTexture, Texture2D tex, SamplerState s, float4 color, ShadingAttribs attr)
 {
 	return evalTex(hasTexture, tex, s, attr, color);
 }
@@ -239,12 +239,12 @@ float4 _fn evalWithColor(in uint32_t hasTexture, in const Texture2D tex, Sampler
 					Normal mapping
 *******************************************************************/
 
-float3 _fn normalToRGB(in const float3 normal)
+float3 _fn normalToRGB(float3 normal)
 {
 	return normal * 0.5f + 0.5f;
 }
 
-float3 _fn RGBToNormal(in const float3 rgbval)
+float3 _fn RGBToNormal(float3 rgbval)
 {
     return rgbval * 2.f - 1.f;
 }
@@ -261,7 +261,7 @@ float3 _fn toLocal(in float3 v, in float3 t, in float3 b, in float3 n)
 
 void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref(float3) b)
 {
-	const float3 normalMap = normalize(texValue);
+	float3 normalMap = normalize(texValue);
 	n = fromLocal(normalMap, normalize(t), normalize(b), normalize(n));
     // Orthogonalize tangent frame
     b = normalize(b - n * dot(b, n));
@@ -269,7 +269,7 @@ void _fn applyNormalMap(in float3 texValue, _ref(float3) n, _ref(float3) t, _ref
 }
 
 #ifndef _MS_LEAN_MAPPING
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
+void _fn perturbNormal(MaterialData mat, _ref(ShadingAttribs) attr, bool forceSample)
 {
 	if(forceSample || mat.desc.hasNormalMap != 0)
 	{
@@ -305,7 +305,7 @@ void applyLeanMap(in Texture2D leanMap, in SamplerState samplerState, inout Shad
     }
 }
 
-void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
+void perturbNormal(MaterialData mat, inout ShadingAttribs shAttr, bool forceSample)
 {
     if (mat.desc.hasNormalMap != 0)
     {
@@ -315,7 +315,7 @@ void perturbNormal(in const MaterialData mat, inout ShadingAttribs shAttr, bool 
 #endif
 
 // Note: explicit overload instead of default argument, at least until cross-compiler can handle defaults
-void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr)
+void _fn perturbNormal(MaterialData mat, _ref(ShadingAttribs) attr)
 {
 	perturbNormal(mat, attr, false);
 }
@@ -325,12 +325,12 @@ void _fn perturbNormal(in const MaterialData mat, _ref(ShadingAttribs) attr)
 					Alpha test
 *******************************************************************/
 
-bool _fn alphaTestEnabled(in const MaterialData mat)
+bool _fn alphaTestEnabled(MaterialData mat)
 {
     return mat.desc.hasAlphaMap != 0;
 }
 
-bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr)
+bool _fn alphaTestPassed(MaterialData mat, ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if(sampleTexture(mat.textures.alphaMap, mat.samplerState, attr).x < mat.values.alphaThreshold)
@@ -339,7 +339,7 @@ bool _fn alphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr
     return true;
 }
 
-void _fn basicAlphaTest(in const MaterialData mat, in const ShadingAttribs attr)
+void _fn basicAlphaTest(MaterialData mat, ShadingAttribs attr)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if(alphaTestEnabled(mat))
@@ -354,7 +354,7 @@ void _fn basicAlphaTest(in const MaterialData mat, in const ShadingAttribs attr)
                     Hashed Alpha Test
 *******************************************************************/
 
-bool _fn hashedAlphaTestPassed(in const MaterialData mat, in const ShadingAttribs attr, float alphaThreshold)
+bool _fn hashedAlphaTestPassed(MaterialData mat, ShadingAttribs attr, float alphaThreshold)
 {
     float compareTo = alphaThreshold <= 0 ? mat.values.alphaThreshold : clamp(alphaThreshold, 0.0f, 1.0f);
 #ifndef _MS_DISABLE_ALPHA_TEST
@@ -364,7 +364,7 @@ bool _fn hashedAlphaTestPassed(in const MaterialData mat, in const ShadingAttrib
     return true;
 }
 
-void _fn applyHashedAlphaTest(in const MaterialData mat, in const ShadingAttribs attr, float alphaThreshold)
+void _fn applyHashedAlphaTest(MaterialData mat, ShadingAttribs attr, float alphaThreshold)
 {
 #ifndef _MS_DISABLE_ALPHA_TEST
     if (alphaTestEnabled(mat))
@@ -454,7 +454,7 @@ float _fn calculateHashedAlpha(float3 hashInputCoord, float hashScale, bool useA
 /*******************************************************************
     alpha test
 *******************************************************************/    
-void _fn applyAlphaTest(in const MaterialData material, in const ShadingAttribs shAttr, float3 posW)
+void _fn applyAlphaTest(MaterialData material, ShadingAttribs shAttr, float3 posW)
 {
     float hashedAlphaScale = 1.0f;
 #ifdef _HASHED_ALPHA_SCALE

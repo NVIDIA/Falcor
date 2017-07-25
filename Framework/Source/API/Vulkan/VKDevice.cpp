@@ -598,7 +598,8 @@ namespace Falcor
         VkSwapchainCreateInfoKHR info = {};
         info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         info.surface = mApiHandle;
-        info.minImageCount = clamp(kSwapChainBuffers, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+        uint32 maxImageCount = surfaceCapabilities.maxImageCount ? surfaceCapabilities.maxImageCount : UINT32_MAX; // 0 means no limit on the number of images
+        info.minImageCount = clamp(kSwapChainBuffers, surfaceCapabilities.minImageCount, maxImageCount);
         info.imageFormat = requestedFormat;
         info.imageColorSpace = requestedColorSpace;
         info.imageExtent = { swapchainExtent.width, swapchainExtent.height };
@@ -634,6 +635,8 @@ namespace Falcor
 
     bool Device::apiInit(const Desc& desc)
     {
+		mRgb32FloatSupported = false;
+
         mpApiData = new DeviceApiData;
         VkInstance instance = createInstance(mpApiData, desc);
         if (!instance) return false;
@@ -691,5 +694,10 @@ namespace Falcor
     const VkPhysicalDeviceLimits& Device::getPhysicalDeviceLimits() const
     {
         return mpApiData->deviceLimits;
+    }
+
+    uint32_t Device::getDeviceVendorID() const
+    {
+        return mpApiData->properties.vendorID;
     }
 }

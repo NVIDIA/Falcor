@@ -49,7 +49,7 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<Light>;
         using SharedConstPtr = std::shared_ptr<const Light>;
 
-        Light();
+        Light() = default;
         virtual ~Light() = default;
 
         /** Set the light parameters into a program. To use this you need to include 'Falcor.h' inside your shader.
@@ -95,13 +95,8 @@ namespace Falcor
         */
         const std::string& getName() const { return mName; }
 
-        /** Reset all global id counter of model, mesh and material
-        */
-        static void resetGlobalIdCounter();
-
-        uint32_t getIndex() const { return mIndex; }
-
         static uint32_t getShaderStructSize() { return kDataSize; }
+
     protected:
 
         static const size_t kDataSize = sizeof(LightData); //TODO(tfoley) HACK:SPIRE - sizeof(MaterialData);
@@ -112,9 +107,7 @@ namespace Falcor
         float getIntensityForUI();
         void setIntensityFromUI(float intensity);
 
-        static uint32_t sCount;
         std::string mName;
-        uint32_t mIndex;
 
         /* These two variables track mData values for consistent UI operation.*/
         glm::vec3 mUiLightIntensityColor = glm::vec3(0.5f, 0.5f, 0.5f);

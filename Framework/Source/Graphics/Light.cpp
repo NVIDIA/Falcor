@@ -55,14 +55,6 @@ namespace Falcor
 #define check_offset(_a)
 #endif
 
-    uint32_t Light::sCount = 0;
-
-    Light::Light()
-    {
-        mIndex = sCount;
-        sCount++;
-    }
-
     void Light::setIntoConstantBuffer(ConstantBuffer* pBuffer, size_t offset)
     {
         static_assert(kDataSize % sizeof(float) * 4 == 0, "LightData size should be a multiple of 16");
@@ -98,11 +90,6 @@ namespace Falcor
         check_offset(numIndices);
 
         setIntoConstantBuffer(pBuffer, offset);
-    }
-
-    void Light::resetGlobalIdCounter()
-    {
-        sCount = 0;
     }
 
     glm::vec3 Light::getColorForUI()
@@ -201,7 +188,6 @@ namespace Falcor
 	DirectionalLight::DirectionalLight() : mDistance(-1.0f)
     {
         mData.type = LightDirectional;
-        mName = "dirLight" + std::to_string(mIndex);
     }
 
     DirectionalLight::SharedPtr DirectionalLight::create()
@@ -269,7 +255,6 @@ namespace Falcor
     PointLight::PointLight()
     {
         mData.type = LightPoint;
-        mName = "pointLight" + std::to_string(mIndex);
     }
 
     PointLight::~PointLight() = default;
@@ -334,7 +319,6 @@ namespace Falcor
     AreaLight::AreaLight()
     {
         mData.type = LightArea;
-        mName = std::string("areaLight") + std::to_string(mIndex);
     }
 
     AreaLight::~AreaLight() = default;

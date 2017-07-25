@@ -50,8 +50,6 @@ private:
 
     bool mCameraLiveViewMode = false;
 
-    uint32_t mScenePrevLightCount = 0;
-
     Scene::SharedPtr mpScene = nullptr;
     GraphicsProgram::SharedPtr mpProgram = nullptr;
     SceneRenderer::SharedPtr mpRenderer = nullptr;

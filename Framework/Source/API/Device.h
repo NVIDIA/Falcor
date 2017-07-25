@@ -142,7 +142,7 @@ namespace Falcor
         QueryHeap::SharedPtr getTimestampQueryHeap() const { return mTimestampQueryHeap; }
         void releaseResource(ApiObjectHandle pResource);
         double getGpuTimestampFrequency() const { return mGpuTimestampFrequency; } // ms/tick
-
+		bool isRgb32FloatSupported() const { return mRgb32FloatSupported; }
 #ifdef FALCOR_VK
         enum class MemoryType
         {
@@ -153,6 +153,7 @@ namespace Falcor
         };
         uint32_t getVkMemoryType(MemoryType falcorType, uint32_t memoryTypeBits) const;
         const VkPhysicalDeviceLimits& getPhysicalDeviceLimits() const;
+        uint32_t  getDeviceVendorID() const;
 #endif
     private:
         struct ResourceRelease
@@ -185,7 +186,7 @@ namespace Falcor
         size_t mFrameID = 0;
         QueryHeap::SharedPtr mTimestampQueryHeap;
         double mGpuTimestampFrequency;
-
+		bool mRgb32FloatSupported = true;
         std::vector<CommandQueueHandle> mCmdQueues[kQueueTypeCount];
 
         // API specific functions
