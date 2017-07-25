@@ -1,4 +1,4 @@
-@set PM_PACKMAN_VERSION=4.0
+@set PM_PACKMAN_VERSION=4.1
 
 :: Specify where config file could exist
 @set PM_CONFIG_PATH=%~dp0..\packman_config.txt
@@ -20,7 +20,15 @@
 :: The above doesn't work properly from a build step in VisualStudio because a separate process is
 :: spawned for it so it will be lost for subsequent compilation steps - VisualStudio must
 :: be launched from a new process. We catch this odd-ball case here:
-@if defined VSLANG goto ERROR_IN_VS_WITH_NO_ROOT_DEFINED
+@if defined PM_DISABLE_VS_WARNING goto ENSURE_DIR
+@if not defined VSLANG goto ENSURE_DIR
+@echo The above is a once-per-computer operation. Unfortunately VisualStudio cannot pick up environment change
+@echo unless *VisualStudio is RELAUNCHED*.
+@echo If you are launching VisualStudio from command line or command line utility make sure
+@echo you have a fresh launch environment (relaunch the command line or utility).
+@echo If you are using 'linkPath' and referring to packages via local folder links you can safely ignore this warning.
+@echo You can disable this warning by setting the environment variable PM_DISABLE_VS_WARNING.
+@echo.
 
 :: Check for the directory that we need. Note that mkdir will create any directories
 :: that may be needed in the path 
@@ -79,14 +87,6 @@
 @del %TARGET%
 
 @goto END
-
-:ERROR_IN_VS_WITH_NO_ROOT_DEFINED
-@echo The above is a once-per-computer operation. Unfortunately VisualStudio cannot pick up environment change
-@echo unless *VisualStudio is RELAUNCHED*.
-@echo NOTE: If you are launching VisualStudio from command line or command line utility make sure
-@echo you have a fresh environment (relaunch the command line or utility).
-@echo.
-@exit /B 1
 
 :ERROR_MKDIR_PACKAGES_ROOT
 @echo Failed to automatically create packman packages repo at %PM_PACKAGES_ROOT%.
