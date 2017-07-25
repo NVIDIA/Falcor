@@ -49,10 +49,10 @@ using namespace glm;
 #ifdef _DEBUG
 #define assert(a)\
     if (!(a)) {\
-		std::string str = "assertion failed(" + std::string(#a) + ")\nFile " + __FILE__ + ", line " + std::to_string(__LINE__);\
-		Falcor::logError(str);\
-	}
-    
+        std::string str = "assertion failed(" + std::string(#a) + ")\nFile " + __FILE__ + ", line " + std::to_string(__LINE__);\
+        Falcor::logError(str);\
+    }
+
 #define should_not_get_here() assert(false);
 #else
 #ifdef _AUTOTESTING
@@ -120,22 +120,30 @@ namespace Falcor
     */
     enum class FboAttachmentType
     {
-        None    = 0,        ///< Nothing. Here just for completeness
-        Color   = 1,        ///< Operate on the color buffer.
-        Depth   = 2,        ///< Operate on the the depth buffer.
-        Stencil = 4,        ///< Operate on the the stencil buffer.
-         
+        None    = 0,    ///< Nothing. Here just for completeness
+        Color   = 1,    ///< Operate on the color buffer.
+        Depth   = 2,    ///< Operate on the the depth buffer.
+        Stencil = 4,    ///< Operate on the the stencil buffer.
+
         All = Color | Depth | Stencil ///< Operate on all targets
     };
 
     enum_class_operators(FboAttachmentType);
 
+    /** Clamps a value within a range.
+        \param[in] val Value to clamp
+        \param[in] minVal Low end to clamp to
+        \param[in] maxVal High end to clamp to
+        \return Result
+    */
     template<typename T>
     inline T clamp(const T& val, const T& minVal, const T& maxVal)
     {
         return min(max(val, minVal), maxVal);
     }
 
+    /** Returns whether a number is a power of two
+    */
     template<typename T>
     inline bool isPowerOf2(T a)
     {
@@ -143,6 +151,8 @@ namespace Falcor
         return (t & (t - 1)) == 0;
     }
 
+    /** Gets the closest power of two to a number, rounded down.
+    */
     inline uint32_t getLowerPowerOf2(uint32_t a)
     {
         assert(a != 0);
@@ -190,6 +200,10 @@ namespace Falcor
 
 namespace Falcor
 {
+    /** Converts ShaderType enum elements to a string.
+        \param[in] type Type to convert to string
+        \return Shader type as a string
+    */
     inline const std::string to_string(ShaderType Type)
     {
         switch(Type)
