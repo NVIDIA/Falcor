@@ -150,7 +150,7 @@ void FeatureDemo::initScene(Scene::SharedPtr pScene)
 
     mpSceneRenderer = FeatureDemoSceneRenderer::create(pScene);
     mpSceneRenderer->setCameraControllerType(SceneRenderer::CameraControllerType::FirstPerson);
-    mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+    mpSceneRenderer->toggleStaticMaterialCompilation(mPerMaterialShader);
     setSceneSampler(mpSceneSampler ? mpSceneSampler->getMaxAnisotropy() : 4);
     setActiveCameraAspectRatio();
     initDepthPass();
@@ -489,8 +489,8 @@ bool FeatureDemo::onKeyEvent(const KeyboardEvent& keyEvent)
             applyCameraPathState();
             return true;
         case KeyboardEvent::Key::O:
-            mOptimizedShaders = !mOptimizedShaders;
-            mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+            mPerMaterialShader = !mPerMaterialShader;
+            mpSceneRenderer->toggleStaticMaterialCompilation(mPerMaterialShader);
             return true;
         }
     }

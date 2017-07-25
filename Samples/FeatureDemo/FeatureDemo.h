@@ -205,7 +205,7 @@ private:
 
     bool mUseCameraPath = true;
     void applyCameraPathState();
-    bool mOptimizedShaders = true;
+    bool mPerMaterialShader = true;
 	bool mEnableDepthPass = true;
 
     // Testing 

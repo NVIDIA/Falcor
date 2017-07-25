@@ -194,11 +194,11 @@ void FeatureDemo::onGuiRender()
 			mpGui->addCheckBox("Depth Pass", mEnableDepthPass);
 			mpGui->addTooltip("Run a depth-pass at the beginning of the frame");
 
-			if (mpGui->addCheckBox("Per-Material Shaders", mOptimizedShaders))
+			if (mpGui->addCheckBox("Per-Material Shaders", mPerMaterialShader))
 			{
-				mpSceneRenderer->toggleStaticMaterialCompilation(mOptimizedShaders);
+				mpSceneRenderer->toggleStaticMaterialCompilation(mPerMaterialShader);
 			}
-			mpGui->addTooltip("Create a specialized, per-material version of the lighting program");
+			mpGui->addTooltip("Create a specialized version of the lighting program for each material in the scene");
 
 			uint32_t maxAniso = mpSceneSampler->getMaxAnisotropy();
 			if (mpGui->addIntVar("Max Anisotropy", (int&)maxAniso, 1, 16))
