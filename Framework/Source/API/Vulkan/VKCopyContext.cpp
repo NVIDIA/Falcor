@@ -227,7 +227,7 @@ namespace Falcor
                 barrier.dstAccessMask = getAccessMask(newState);
 
                 // #OPTME: Group barriers into a single call. Do we always need to use VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT?
-                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
             }
             else
             {
@@ -241,7 +241,7 @@ namespace Falcor
                 barrier.offset = pBuffer->getGpuAddressOffset();
                 barrier.size = pBuffer->getSize();
 
-                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+                vkCmdPipelineBarrier(mpLowLevelData->getCommandList(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 1, &barrier, 0, nullptr);
             }
 
 
