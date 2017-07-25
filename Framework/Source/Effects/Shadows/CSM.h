@@ -116,8 +116,8 @@ namespace Falcor
         struct SdsmData
         {
             ParallelReduction::UniquePtr minMaxReduction;
-            uint32_t width;
-            uint32_t height;
+            uint32_t width = 0;
+            uint32_t height = 0;
             int32_t readbackLatency = 1;
         };
         SdsmData mSdsmData;

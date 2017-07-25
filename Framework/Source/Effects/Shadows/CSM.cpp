@@ -252,28 +252,23 @@ namespace Falcor
         if(mSdsmData.readbackLatency != latency)
         {
             mSdsmData.readbackLatency = latency;
-            createSdsmData(nullptr);
+            mSdsmData.minMaxReduction = nullptr;
         }
     }
 
     void CascadedShadowMaps::createSdsmData(Texture::SharedPtr pTexture)
     {
-        // Check if we actually need to create it
-        if(pTexture)
+        assert(pTexture);
+        // Only create a new technique if it doesn't exist or the dimensions changed
+        if (mSdsmData.minMaxReduction)
         {
-            // Got a texture, if we already have a reduction check if the dimensions changes
-            if(mSdsmData.minMaxReduction)
+            if (mSdsmData.width == pTexture->getWidth() && mSdsmData.height == pTexture->getHeight())
             {
-                if(mSdsmData.width == pTexture->getWidth() && mSdsmData.height == pTexture->getHeight())
-                {
-                    // No need to do anything. That's the only time we don't create the reduction
-                    return;
-                }
+                return;
             }
-            mSdsmData.width = pTexture->getWidth();
-            mSdsmData.height = pTexture->getHeight();
         }
-
+        mSdsmData.width = pTexture->getWidth();
+        mSdsmData.height = pTexture->getHeight();
         mSdsmData.minMaxReduction = ParallelReduction::create(ParallelReduction::Type::MinMax, mSdsmData.readbackLatency, mSdsmData.width, mSdsmData.height);
     }
 
@@ -383,9 +378,9 @@ namespace Falcor
             if (pGui->beginGroup(sdsmGroup))
             {
                 pGui->addCheckBox("Enable", mControls.useMinMaxSdsm);
-                if(pGui->addIntVar("Readback Latency", mSdsmData.readbackLatency))
+                if (pGui->addIntVar("Readback Latency", mSdsmData.readbackLatency))
                 {
-                    createSdsmData(nullptr);
+                    setSdsmReadbackLatency(mSdsmData.readbackLatency);
                 }
                 pGui->endGroup();
             }
