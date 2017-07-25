@@ -55,6 +55,7 @@ namespace Falcor
         /** Get the texture containing the characters
         */
         Texture::SharedPtr getTexture() const { return mpTexture; }
+
         /** Get the character descriptor
         */
         const CharTexCrdDesc& getCharDesc(char c) const
@@ -66,9 +67,11 @@ namespace Falcor
         /** Get the height in pixels of the font
         */
         float getFontHeight() const { return mFontHeight; }
+
         /** Get the width in pixels of the tab character
         */
         float getTabWidth() const { return mTabWidth; }
+
         /** Get the spacing in pixels between 2 characters. This is measured as (start-of-char-2) - (start-of-char-1).
         */
         float getLettersSpacing() const { return mLetterSpacing; }
