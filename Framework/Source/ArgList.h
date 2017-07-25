@@ -32,6 +32,8 @@
 
 namespace Falcor
 {
+    /** Parses command line arguments and stores them for look-up by the user.
+    */
     class ArgList
     {
     public:

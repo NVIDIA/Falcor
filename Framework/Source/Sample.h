@@ -73,7 +73,7 @@ namespace Falcor
         Sample& operator=(const Sample&) = delete;
 
         /** Entry-point to Sample. User should call this to start processing.
-            \param config Requested sample configuration
+            \param[in] config Requested sample configuration
         */
         virtual void run(const SampleConfig& config);
 
@@ -101,13 +101,13 @@ namespace Falcor
         virtual void onDataReload() {}
 
         /** Called every time a key event occurred.
-            \param keyEvent The keyboard event
+            \param[in] keyEvent The keyboard event
             \return true if the event was consumed by the callback, otherwise false
         */
         virtual bool onKeyEvent(const KeyboardEvent& keyEvent) { return false; }
 
         /** Called every time a mouse event occurred.
-            \param mouseEvent The mouse event
+            \param[in] mouseEvent The mouse event
             \return true if the event was consumed by the callback, otherwise false
         */
         virtual bool onMouseEvent(const MouseEvent& mouseEvent) { return false; }
@@ -119,13 +119,13 @@ namespace Falcor
         virtual void onGuiRender() {};
 
         /** Resize the swap-chain buffers
-            \param width Requested width
-            \param height Requested height
+            \param[in] width Requested width
+            \param[in] height Requested height
         */
         void resizeSwapChain(uint32_t width, uint32_t height);
 
         /** Get whether the given key is pressed
-            \param key The key
+            \param[in] key The key
         */
         bool isKeyPressed(const KeyboardEvent::Key& key) const;
 
@@ -134,9 +134,9 @@ namespace Falcor
         const FrameRate& frameRate() const { return mFrameRate; }
 
         /** Render a text string.
-            \param str The string to render
-            \param position Window position of the string in pixels from the top-left corner
-            \param shadowOffset Offset for an outline shadow. Disabled if zero.
+            \param[in] str The string to render
+            \param[in] position Window position of the string in pixels from the top-left corner
+            \param[in] shadowOffset Offset for an outline shadow. Disabled if zero.
         */
         void renderText(const std::string& str, const glm::vec2& position, const glm::vec2 shadowOffset = glm::vec2(1.f, 1.f)) const;
 
