@@ -136,7 +136,8 @@ namespace Falcor
         case Resource::State::Undefined:
         case Resource::State::PreInitialized:
         case Resource::State::Common:
-            return src ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            assert(src);
+            return src ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : (VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
         case Resource::State::VertexBuffer:
         case Resource::State::IndexBuffer:
             return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
@@ -156,7 +157,7 @@ namespace Falcor
         case Resource::State::ResolveSource:
             return VK_PIPELINE_STAGE_TRANSFER_BIT;
         case Resource::State::Present:
-            return src ? VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            return src ? (VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         default:
             should_not_get_here();
             return VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
