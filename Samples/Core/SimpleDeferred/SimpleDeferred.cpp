@@ -373,7 +373,7 @@ void SimpleDeferred::onInitializeTesting()
 
 void SimpleDeferred::onEndTestFrame()
 {
-    uint32_t frameId = frameRate().getFrameCount();
+    uint32_t frameId = getFrameRate().getFrameCount();
     if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
     {
         ++mChangeModeIt;

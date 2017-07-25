@@ -260,7 +260,7 @@ void Shadows::onInitializeTesting()
 
 void Shadows:: onEndTestFrame()
 {
-    uint32_t frameId = frameRate().getFrameCount();
+    uint32_t frameId = getFrameRate().getFrameCount();
     if (mFilterFramesIt != mFilterFrames.end() && frameId >= *mFilterFramesIt)
     {
         ++mFilterFramesIt;

@@ -42,7 +42,7 @@ namespace Falcor
 {
     Sample::Sample()
     {
-    };
+    }
 
     void Sample::handleWindowSizeChange()
     {
@@ -74,7 +74,7 @@ namespace Falcor
             return;
         }
 
-        //Checks if should toggle zoom
+        // Checks if should toggle zoom
         mpPixelZoom->onKeyboardEvent(keyEvent);
 
         // Consume system messages first
@@ -139,8 +139,7 @@ namespace Falcor
         onMouseEvent(mouseEvent);
     }
 
-
-    // CSample functions
+    // Sample functions
     Sample::~Sample()
     {
         if (mVideoCapture.pVideoCapture)
@@ -479,7 +478,7 @@ namespace Falcor
             }
         }
     }
-    
+ 
     void Sample::endVideoCapture()
     {
         if (mVideoCapture.pVideoCapture)
@@ -514,12 +513,12 @@ namespace Falcor
             }
         }
     }
-    
+
     void Sample::shutdownApp()
     {
         mpWindow->shutdown();
     }
-    
+
     void Sample::pollForEvents()
     {
         mpWindow->pollForEvents();

@@ -144,7 +144,7 @@ void EnvMap::onEndTestFrame()
         vec3(-1, 0, 0) 
     };
 
-    uint32_t frameId = frameRate().getFrameCount();
+    uint32_t frameId = getFrameRate().getFrameCount();
     if (mChangeViewIt != mChangeViewFrames.end() && frameId >= *mChangeViewIt)
     {
         ++mChangeViewIt;

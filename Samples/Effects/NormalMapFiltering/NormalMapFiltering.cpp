@@ -156,7 +156,7 @@ void NormalMapFiltering::onEndTestFrame()
     static const bool useSpecAA[numCombos] = {false, true, false, true };
     static uint32_t index = 0;
 
-    uint32_t frameId = frameRate().getFrameCount();
+    uint32_t frameId = getFrameRate().getFrameCount();
     if (mChangeModeIt != mChangeModeFrames.end() && frameId >= *mChangeModeIt)
     {
         ++mChangeModeIt;

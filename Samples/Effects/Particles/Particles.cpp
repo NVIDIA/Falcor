@@ -70,7 +70,7 @@ void Particles::onFrameRender()
 
     for (auto it = mpParticleSystems.begin(); it != mpParticleSystems.end(); ++it)
     {
-        (*it)->update(mpRenderContext.get(), frameRate().getLastFrameTime(), mpCamera->getViewMatrix());
+        (*it)->update(mpRenderContext.get(), getFrameRate().getLastFrameTime(), mpCamera->getViewMatrix());
         (*it)->render(mpRenderContext.get(), mpCamera->getViewMatrix(), mpCamera->getProjMatrix());
     }
 }

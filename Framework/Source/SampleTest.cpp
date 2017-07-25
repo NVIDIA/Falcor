@@ -49,7 +49,7 @@ namespace Falcor
     {   
         if (!hasTests()) return;
 
-        uint32_t frameId = frameRate().getFrameCount();
+        uint32_t frameId = getFrameRate().getFrameCount();
         //  Check if it's time for a time based task
         if (mCurrentTimeTest != mTimedTestTasks.end() && mCurrentTime >= mCurrentTimeTest->mStartTime)
         {
@@ -67,7 +67,7 @@ namespace Falcor
                 //  Across the perf range
                 if (mCurrentTimeTest->mStartFrame == 0)
                 {
-                    mCurrentTimeTest->mStartFrame = frameRate().getFrameCount();
+                    mCurrentTimeTest->mStartFrame = getFrameRate().getFrameCount();
                 }
             }
 
@@ -394,7 +394,7 @@ namespace Falcor
 
     void SampleTest::runFrameTests()
     {
-        if (frameRate().getFrameCount() == mCurrentFrameTest->mEndFrame)
+        if (getFrameRate().getFrameCount() == mCurrentFrameTest->mEndFrame)
         {
             if (mCurrentFrameTest->mTask == TaskType::MeasureFps)
             {
@@ -402,7 +402,7 @@ namespace Falcor
             }
             else if (mCurrentFrameTest->mTask == TaskType::MemoryCheck)
             {
-                captureMemory(frameRate().getFrameCount(), mCurrentTime, true, true);
+                captureMemory(getFrameRate().getFrameCount(), mCurrentTime, true, true);
             }
 
             ++mCurrentFrameTest;
@@ -412,11 +412,11 @@ namespace Falcor
             switch (mCurrentFrameTest->mTask)
             {
             case TaskType::MemoryCheck:
-                captureMemory(frameRate().getFrameCount(), mCurrentTime, true, false);
+                captureMemory(getFrameRate().getFrameCount(), mCurrentTime, true, false);
                 break;
             case TaskType::LoadTime:
             case TaskType::MeasureFps:
-                mCurrentFrameTest->mResult += frameRate().getLastFrameTime();
+                mCurrentFrameTest->mResult += getFrameRate().getLastFrameTime();
                 break;
             case TaskType::ScreenCapture:
                 captureScreen();
@@ -443,12 +443,12 @@ namespace Falcor
         {
             if (mCurrentTime >= mCurrentTimeTest->mEndTime)
             {
-                captureMemory(frameRate().getFrameCount(), mCurrentTime, false, true);
+                captureMemory(getFrameRate().getFrameCount(), mCurrentTime, false, true);
                 ++mCurrentTimeTest;
             }
             else
             {
-                captureMemory(frameRate().getFrameCount(), mCurrentTime, false, false);
+                captureMemory(getFrameRate().getFrameCount(), mCurrentTime, false, false);
             }
             break;
         }
@@ -463,12 +463,12 @@ namespace Falcor
         {
             if (mCurrentTime >= mCurrentTimeTest->mEndTime)
             {
-                mCurrentTimeTest->mResult /= (frameRate().getFrameCount() - mCurrentTimeTest->mStartFrame);
+                mCurrentTimeTest->mResult /= (getFrameRate().getFrameCount() - mCurrentTimeTest->mStartFrame);
                 ++mCurrentTimeTest;
             }
             else
             {
-                mCurrentTimeTest->mResult += frameRate().getLastFrameTime();
+                mCurrentTimeTest->mResult += getFrameRate().getLastFrameTime();
             }
             break;
         }
