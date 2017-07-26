@@ -3,5 +3,13 @@
 }
 
 {
+    \\netapp-wa02\public\Falcor\IntelReferenceResultsHub\, Test, TestListD3D12Debug.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorD3D12, intel-tests
+}
+
+{
     \\netapp-wa02\public\Falcor\IntelReferenceResultsHub\, Test, TestListVK.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorVulkan, intel-tests
+}
+
+{
+    \\netapp-wa02\public\Falcor\IntelReferenceResultsHub\, Test, TestListVKDebug.txt, https://github.com/NVIDIA/Falcor.git, C:\Falcor\FalcorVulkan, intel-tests
 }
