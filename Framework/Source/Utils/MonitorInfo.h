@@ -44,6 +44,7 @@ namespace Falcor
         */
         struct MonitorDesc
         {
+            // #DOC
             std::string mIdentifier;
             glm::vec2 mResolution;
             glm::vec2 mPhysicalSize;

@@ -45,6 +45,7 @@ namespace Falcor
         */
         struct ExperimentDescription
         {
+            // #DOC
             std::string mName;
             std::map<std::string, float> mParamList;
             std::map<std::string, std::string> mDescList;
@@ -100,6 +101,8 @@ namespace Falcor
             /** Reset the experiment state
             */
             void clear();
+
+        private:
 
             std::vector<std::string> mConditionParamNames;
             std::vector<float> mConditionParamValues;

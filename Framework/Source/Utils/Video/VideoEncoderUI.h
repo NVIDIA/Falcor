@@ -33,6 +33,7 @@ namespace Falcor
 {
     class Gui;
 
+    // #DOC
     class VideoEncoderUI
     {
     public:

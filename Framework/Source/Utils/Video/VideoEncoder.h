@@ -35,7 +35,8 @@ struct SwsContext;
 struct AVCodecContext;
 
 namespace Falcor
-{        
+{
+    // #DOC
     class VideoEncoder
     {
     public:

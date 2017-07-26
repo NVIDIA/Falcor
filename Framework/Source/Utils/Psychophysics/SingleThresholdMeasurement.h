@@ -37,6 +37,8 @@ namespace Falcor
 {
     namespace Psychophysics
     {
+        // #DOC
+
         /** Psychophysics method types
         */
         enum PsychophysicsMethod { DiscreteStaircase, BucketStaircase, MethodOfConstantStimuli };

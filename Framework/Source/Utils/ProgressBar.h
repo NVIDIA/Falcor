@@ -33,13 +33,25 @@
 namespace Falcor
 {
     struct ProgressBarData;
+
+    /** Creates a progress bar visual and manages a new thread for it.
+    */
     class ProgressBar
     {
     public:
         using SharedPtr = std::shared_ptr<ProgressBar>;
         using MessageList = std::vector<std::string>;
 
+        /** Creates a progress bar.
+            \param[in] list List of messages to display on the progress bar
+            \param[in] delayInMs Time between updates in milliseconds
+        */
         static SharedPtr create(const MessageList& list, uint32_t delayInMs = 1000);
+
+        /** Creates a progress bar.
+            \param[in] pMsg Message to display on the progress bar
+            \param[in] delayInMs Time between updates in milliseconds
+        */
         static SharedPtr create(const char* pMsg = nullptr, uint32_t delayInMs = 1000);
         ~ProgressBar();
 
