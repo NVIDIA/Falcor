@@ -30,6 +30,9 @@
 
 namespace Falcor
 {
+    /** Test framework layer for Falcor.
+        Runs tests based on config files passed in by command line arguments
+    */
     class SampleTest : public Sample
     {
     public:
@@ -66,22 +69,27 @@ namespace Falcor
         virtual void onTestShutdown() {};
 
     protected:
+
+        /** Different ways test tasks can be triggered
+        */
         enum class TriggerType
         {
-            Frame,
-            Time,
-            None,
+            Frame,  ///< Triggered by frame count
+            Time,   ///< Triggered by time since application launch
+            None,   ///< No tests will be run
         };
         TriggerType mCurrentTrigger = TriggerType::None;
 
+        /** Types of operations used in testing
+        */
         enum class TaskType
         {
-            MemoryCheck,
-            LoadTime,
-            MeasureFps,
-            ScreenCapture,
-            Shutdown,
-            Uninitialized
+            MemoryCheck,    ///< Records the application's current memory usage
+            LoadTime,       ///< 
+            MeasureFps,     ///< Records the current FPS
+            ScreenCapture,  ///< Captures a screenshot
+            Shutdown,       ///< Close the application
+            Uninitialized   ///< Default value. All tasks must be initialized on startup
         };
 
         struct Task
@@ -120,20 +128,24 @@ namespace Falcor
         /** Outputs xml test results file
         */
         void outputXML();
-        /** inits tests that start on a particular frame
+
+        /** Initializes tests that start based on frame number
         */
         void initFrameTests();
-        /** inits tests that start at a particular time
+
+        /** Initializes tests that start based on time
         */
         void initTimeTests();
-        /** run tests that start on a particular frame
+
+        /** Run tests that start based on frame number
         */
         void runFrameTests();
-        /** run tests that start at a particular time
+
+        /** Run tests that start based on time
         */
         void runTimeTests();
 
-        //  The Memory Check for one point.
+        // The Memory Check for one point.
         struct MemoryCheck
         {
             float time;
@@ -144,7 +156,7 @@ namespace Falcor
             uint64_t currentlyUsedVirtualMemory;
         };
 
-        //  The Memory Check Between Frames.
+        // The Memory Check Between Frames.
         struct MemoryCheckRange
         {
             bool active = false;
@@ -152,7 +164,7 @@ namespace Falcor
             MemoryCheck endCheck;
         };
 
-        //  The List of Memory Check Ranges.
+        // The List of Memory Check Ranges.
         MemoryCheckRange mMemoryFrameCheckRange;
         MemoryCheckRange mMemoryTimeCheckRange;
 

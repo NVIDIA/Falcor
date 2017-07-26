@@ -60,21 +60,23 @@ namespace Falcor
         OkCancel,    ///< OK/Cancel buttons
     };
 
+    /** Types of buttons
+    */
     enum class MsgBoxButton
     {
-        Ok,
-        Retry,
-        Cancel
+        Ok,     ///< 'OK' Button
+        Retry,  ///< Retry button
+        Cancel  ///< Cancel Button
     };
 
     /** Display a message box. By default, shows a message box with a single 'OK' button.
         \param[in] msg The message to display.
         \param[in] mbType Optional. Type of message box to display
-        \return an enum indicating which button was clicked
+        \return An enum indicating which button was clicked
     */
     MsgBoxButton msgBox(const std::string& msg, MsgBoxType mbType = MsgBoxType::Ok);
 
-    /** Finds a file in one of the media directories.  The arguments must not alias.
+    /** Finds a file in one of the media directories. The arguments must not alias.
         \param[in] filename The file to look for
         \param[in] fullPath If the file was found, the full path to the file. If the file wasn't found, this is invalid.
         \return true if the file was found, otherwise false
@@ -89,7 +91,7 @@ namespace Falcor
     /** Creates a 'open file' dialog box.
         \param[in] pFilters A string containing pairs of null terminating strings. The first string in each pair is the name of the filter, the second string in a pair is a semicolon separated list of file extensions
                    (for example, "*.TXT;*.DOC;*.BAK"). The last pair in the filter list has to end with a 2 null characters.
-        \filename[in] On successful return, the name of the file selected by the user.
+        \param[in] filename On successful return, the name of the file selected by the user.
         \return true if a file was selected, otherwise false (if the user clicked 'Cancel').
     */
     bool openFileDialog(const char* pFilters, std::string& filename);
@@ -97,7 +99,7 @@ namespace Falcor
     /** Creates a 'save file' dialog box.
         \param[in] pFilters A string containing pairs of null terminating strings. The first string in each pair is the name of the filter, the second string in a pair is a semicolon separated list of file extensions
                    (for example, "*.TXT;*.DOC;*.BAK"). The last pair in the filter list has to end with a 2 null characters.
-        \filename[in] On successful return, the name of the file selected by the user.
+        \param[in] filename On successful return, the name of the file selected by the user.
         \return true if a file was selected, otherwise false (if the user clicked 'Cancel').
     */
     bool saveFileDialog(const char* pFilters, std::string& filename);
@@ -131,14 +133,16 @@ namespace Falcor
     */ 
     const std::string getWorkingDirectory();
 
-	/** Get the content of a system environment variable.
-        \return The value of the environment variable.
+    /** Get the content of a system environment variable.
+        \param[in] varName Name of the environment variable
+        \param[out] value On success, will hold the value of the environment variable.
+        \return true if environment variable was found, otherwise false.
     */
-    bool getEnvironemntVariable(const std::string& VarName, std::string& Value);
+    bool getEnvironemntVariable(const std::string& varName, std::string& value);
 
-	/** Get the set containing all recorded data directories.
-	*/
-	const std::vector<std::string>& getDataDirectoriesList();
+    /** Get a list of all recorded data directories.
+    */
+    const std::vector<std::string>& getDataDirectoriesList();
 
     /** Read a file into a string. The function expects a full path to the file, and will not look in the common directories.
         \param[in] fullpath The path to the requested file
@@ -175,22 +179,33 @@ namespace Falcor
     void debugBreak();
 
     /** Print a message into the debug window
+        \param[in] s Text to pring
     */
     void printToDebugWindow(const std::string& s);
 
     /** Get directory from filename.
+        \param[in] filename File path to strip directory from
+        \return Stripped directory path
     */
     std::string getDirectoryFromFile(const std::string& filename);
 
     /** Strip path from a full filename
+        \param[in] filename File path
+        \return Stripped filename
     */
     std::string getFilenameFromPath(const std::string& filename);
 
     /** Swap file extension (very simple implementation)
+        \param[in] str File name or full path
+        \param[in] currentExtension Current extension to look for
+        \param[in] newExtension Extension to replace the current with
+        \return If end of str matches currentExtension, returns the file name replaced with the new extension, otherwise returns the original file name.
     */
     std::string swapFileExtension(const std::string& str, const std::string& currentExtension, const std::string& newExtension);
 
-    /** Enumerate Files Using search string
+    /** Enumerate files using search string
+        \param[in] searchString String to use in file search
+        \param[out] filenames Vector of found filenames
     */
     void enumerateFiles(std::string searchString, std::vector<std::string>& filenames);
     
@@ -203,6 +218,8 @@ namespace Falcor
     void setThreadAffinity(std::thread::native_handle_type thread, uint32_t affinityMask);
 
     /** Get the last time a file was modified. If the file is not found will return 0
+        \param[in] filename The file to look for
+        \return Epoch timestamp of when the file was last modified
     */
     time_t getFileModifiedTime(const std::string& filename);
 

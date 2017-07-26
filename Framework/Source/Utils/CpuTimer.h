@@ -45,13 +45,13 @@ namespace Falcor
         }
 
         /** Update the timer.
-            \return  The TimePoint of the last update() call.
-                This value is meaningless on it's own. Call CCpuTimer#CalcDuration() to get the duration that passed between 2 TimePoints
+            \return The TimePoint of the last update() call.
+                This value is meaningless on it's own. Call CCpuTimer#calcDuration() to get the duration that passed between 2 TimePoints
         */
         TimePoint update()
         {
             auto now = getCurrentTimePoint();
-            mElpasedTime = now - mCurrentTime;
+            mElapsedTime = now - mCurrentTime;
             mCurrentTime = now;
             return mCurrentTime;
         }
@@ -60,7 +60,7 @@ namespace Falcor
         */
         float getElapsedTime() const
         {
-            return float(mElpasedTime.count());
+            return float(mElapsedTime.count());
         }
 
         /** Calculate the duration in milliseconds between 2 time points
@@ -74,6 +74,6 @@ namespace Falcor
 
     private:
         TimePoint mCurrentTime;
-        std::chrono::duration<double> mElpasedTime;
+        std::chrono::duration<double> mElapsedTime;
     };
 }

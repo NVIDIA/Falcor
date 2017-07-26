@@ -34,6 +34,8 @@
 
 namespace Falcor
 {
+    /** SceneRenderer extended to add picking capabilities. Determines which object in the scene was clicked by the mouse.
+    */
     class Picking : public SceneRenderer
     {
     public:

@@ -41,7 +41,7 @@ namespace Falcor
     class RenderContext;
 
     /** Class that renders text into the screen.
-        This class batches messages before drawing them for more efficient rendering. In order to do that, you have to enclose CTextRenderer#RenderLine() calls between CTextRenderer#Begin() and CTextRenderer#End() calls.
+        This class batches messages before drawing them for more efficient rendering. In order to do that, you have to enclose TextRenderer#renderLine() calls between TextRenderer#begin() and TextRenderer#end() calls.
     */
     class TextRenderer
     {
@@ -57,14 +57,16 @@ namespace Falcor
 
         /** Start batching messages
             \param[in] pRenderContext The rendering context
-            \param[in] startPos The screen-space position of the first letter to draw
+            \param[in] startPos The screen-space position, from the top-left, of the first letter to draw
         */
         void begin(const RenderContext::SharedPtr& pRenderContext, const glm::vec2& startPos);
+
         /** End batching. This will cause the render queue to flush and display the message to the screen.
         */
         void end();
+
         /** Render a line. After the function is called, an implicit newline is inserted into the message.
-            \param[in] line The line to draw. It can include newlines, tabs, carriage returns and regular ascii characters.
+            \param[in] line The line to draw. It can include newlines, tabs, carriage returns and regular ASCII characters.
         */
         void renderLine(const std::string& line);
                 
@@ -78,13 +80,14 @@ namespace Falcor
         */
         void setTextColor(const glm::vec3& color) { mTextColor = color; }
 
+    private:
+        TextRenderer();
+
         struct Vertex
         {
             glm::vec2 screenPos;
             glm::vec2 texCoord;
         };
-    private:
-        TextRenderer();
 
         RenderContext::SharedPtr mpRenderContext = nullptr;
 

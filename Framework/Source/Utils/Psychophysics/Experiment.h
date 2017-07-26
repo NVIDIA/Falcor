@@ -101,6 +101,8 @@ namespace Falcor
             */
             void clear();
 
+        private:
+
             std::vector<std::string> mConditionParamNames;
             std::vector<float> mConditionParamValues;
             std::vector<SingleThresholdMeasurement> mMeasurements;

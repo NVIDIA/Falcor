@@ -42,9 +42,9 @@ namespace Falcor
         */
         enum class Level
         {
-            Info = 0,           ///< Informative messages
-            Warning = 1,        ///< Warning messages
-            Error = 2,          ///< Error messages. Application might be able to continue running, but incorrectly.
+            Info = 0,       ///< Informative messages
+            Warning = 1,    ///< Warning messages
+            Error = 2,      ///< Error messages. Application might be able to continue running, but incorrectly.
 
             Disabled = -1
         };
@@ -52,9 +52,11 @@ namespace Falcor
         /** Initialize the logger. Has to be called once before logging is possible. This function will create the log file.
         */
         static void init();
+
         /** Shutdown the logger and close the log file.
         */
         static void shutdown();
+
         /** Controls weather or not to show message box on log messages.
             \param[in] showBox true to show a message box, false to disable it.
         */
@@ -72,6 +74,7 @@ namespace Falcor
         /** Set the logger verbosity
         */
         static void setVerbosity(Level level) { sVerbosity = level; }
+
     private:
         friend void logInfo(const std::string& msg, bool forceMsgBox);
         friend void logWarning(const std::string& msg, bool forceMsgBox);

@@ -36,6 +36,8 @@ namespace Falcor
     class Camera;
     struct BoundingBox;
 
+    /** Utility class to assist in drawing debug geometry
+    */
     class DebugDrawer
     {
     public:
@@ -43,14 +45,14 @@ namespace Falcor
         using SharedPtr = std::shared_ptr<DebugDrawer>;
         using SharedConstPtr = std::shared_ptr<const DebugDrawer>;
 
-        static const uint32_t kMaxVertices = 10000;
-        static const uint32_t kPathDetail = 10; // Segments between keyframes
+        static const uint32_t kMaxVertices = 10000;     ///< Default max number of vertices per DebugDrawer instance
+        static const uint32_t kPathDetail = 10;         ///< Segments between keyframes
 
         using Quad = std::array<glm::vec3, 4>;
 
         static SharedPtr create(uint32_t maxVertices = kMaxVertices);
 
-        /** Sets the color for future geometry
+        /** Sets the color for following geometry
         */
         void setColor(const glm::vec3& color) { mCurrentColor = color; }
 

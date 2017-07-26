@@ -38,6 +38,10 @@ namespace Falcor
     */
 
     /** Check is a string starts with another string
+        \param[in] str String to check in
+        \param[in] prefix Prefix to check for
+        \param[in] caseSensitive Whether comparison should be case-sensitive
+        \return Returns true if string starts with the specified prefix.
     */
     inline bool hasPrefix(const std::string& str, const std::string& prefix, bool caseSensitive = true)
     {
@@ -60,6 +64,10 @@ namespace Falcor
     }
 
     /** Check is a string ends with another string
+        \param[in] str String to check in
+        \param[in] suffix Suffix to check for
+        \param[in] caseSensitive Whether comparison should be case-sensitive
+        \return Returns true if string ends with the specified suffix
     */
     inline bool hasSuffix(const std::string& str, const std::string& suffix, bool caseSensitive = true)
     {
@@ -81,7 +89,10 @@ namespace Falcor
         return false;
     }
 
-    /** Split a string into a vector of strings based on d delimiter        
+    /** Split a string into a vector of strings based on d delimiter
+        \param[in] str String to split
+        \param[in] delim Delimiter to split strings by
+        \return Array of split strings excluding delimiters.
     */
     inline std::vector<std::string> splitString(const std::string& str, const std::string& delim)
     {
@@ -110,6 +121,8 @@ namespace Falcor
     }
 
     /** Remove leading whitespaces (space, tab, newline, carriage-return)
+        \param[in] str String to operate on
+        \return String with leading whitespaces removed.
     */
     inline std::string removeLeadingWhitespaces(const std::string& str)
     {
@@ -123,6 +136,8 @@ namespace Falcor
     }
 
     /** Remove trailing whitespaces (space, tab, newline, carriage-return)
+        \param[in] str String to operate on
+
     */
     inline std::string removeTrailingWhitespaces(const std::string& str)
     {
@@ -135,7 +150,7 @@ namespace Falcor
         return ret;
     }
 
-    /** Remote trailing and leading whitespaces
+    /** Remove trailing and leading whitespaces
     */
     inline std::string removeLeadingTrailingWhitespaces(const std::string& str)
     {
@@ -143,9 +158,9 @@ namespace Falcor
     }
 
     /** Replace all occurrences of a substring in a string. The function doesn't change the original string
-        \param Input The input string
-        \param Src The substring to replace
-        \param Dst The substring to replace Src with
+        \param input The input string
+        \param src The substring to replace
+        \param dst The substring to replace Src with
     */
     inline std::string replaceSubstring(const std::string& input, const std::string& src, const std::string& dst)
     {
@@ -160,7 +175,11 @@ namespace Falcor
         return res;
     }
 
-    /** Remove the last array index from a string, if it exists
+    /** Parses a string in the format <name>[<index>]. If format is valid, outputs the base name and the array index.
+        \param[in] name String to parse
+        \param[out] nonArray Becomes set to the non-array index portion of the string
+        \param[out] index Becomes set to the index value parsed from the string
+        \return Whether string was successfully parsed.
     */
     inline bool parseArrayIndex(const std::string& name, std::string& nonArray, uint32_t& index)
     {
@@ -185,7 +204,7 @@ namespace Falcor
         return false;
     }
 
-    /** convert string to wstring
+    /** Convert an ASCII string to a UTF-8 wstring
     */
     inline std::wstring string_2_wstring(const std::string& s)
     {
@@ -194,6 +213,8 @@ namespace Falcor
         return ws;
     }
 
+    /** Convert a UTF-8 wstring to an ASCII string
+    */
     inline std::string wstring_2_string(const std::wstring& ws)
     {
         std::wstring_convert<std::codecvt_utf8<WCHAR>> cvt;

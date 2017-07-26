@@ -49,19 +49,19 @@ namespace Falcor
         using UniquePtr = std::unique_ptr<Gui>;
         using UniqueConstPtr = std::unique_ptr<const Gui>;
 
-        /** This structs is used to initialize dropdowns
+        /** These structs used to initialize dropdowns
         */
         struct DropdownValue
         {
-            int32_t value;          ///< User defined index. Should be unique between different options.
-            std::string label;      ///< Label of the dropdown option.
+            int32_t value;      ///< User defined index. Should be unique between different options.
+            std::string label;  ///< Label of the dropdown option.
         };
 
         using DropdownList = std::vector <DropdownValue>;
 
         struct RadioButton
         {
-            int32_t buttonID;  ///< User defined index. Should be unique between different options.
+            int32_t buttonID;  ///< User defined index. Should be unique between different options in the same group.
             std::string label; ///< Label of the radio button.
             bool sameLine;     ///< Whether the button should appear on the same line as the previous widget/button.
         };
@@ -95,6 +95,7 @@ namespace Falcor
         void addText(const char text[], bool sameLine = false);
 
         /** Button. Will return true if the button was pressed
+            \param[in] label Text to display on the button
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
         */
         bool addButton(const char label[], bool sameLine = false);
@@ -102,13 +103,14 @@ namespace Falcor
         /** Adds a group of radio buttons.
             \param[in] buttons List of buttons to show.
             \param[out] activeID If a button was clicked, activeID will be set to the ID of the clicked button.
-
             \return Whether activeID changed.
         */
         bool addRadioButtons(const RadioButtonGroup& buttons, int32_t& activeID);
 
         /** Begin a collapsible group block
-            returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
+            \param[in] label Display name of the group
+            \param[in] beginExpanded Whether group should be expanded initially
+            \return Returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
         */
         bool beginGroup(const char label[], bool beginExpanded = false);
         bool beginGroup(const std::string& label, bool beginExpanded = false) { return beginGroup(label.c_str(), beginExpanded); }
@@ -124,41 +126,37 @@ namespace Falcor
             \param[in] maxVal Optional. The maximum allowed value for the float.
             \param[in] step Optional. The step rate for the float.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
-
             \return true if the value changed, otherwise false
         */
         bool addFloatVar(const char label[], float& var, float minVal = -FLT_MAX, float maxVal = FLT_MAX, float step = 0.001f, bool sameLine = false);
 
         /** Adds a 2-elements floating-point vector UI element.
-        \param[in] label The name of the widget.
-        \param[in] var A reference to a float2 that will be updated directly when the widget state changes.
-        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
-        \param[in] maxVal Optional. The maximum allowed value for each element ofthe vector.
-        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
-
-        \return true if the value changed, otherwise false
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a float2 that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+            \param[in] maxVal Optional. The maximum allowed value for each element ofthe vector.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
         bool addFloat2Var(const char label[], glm::vec2& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
 
         /** Adds a 3-elements floating-point vector UI element.
-        \param[in] label The name of the widget.
-        \param[in] var A reference to a float3 that will be updated directly when the widget state changes.
-        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
-        \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
-        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
-
-        \return true if the value changed, otherwise false
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a float3 that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+            \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
         bool addFloat3Var(const char label[], glm::vec3& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
 
         /** Adds a 4-elements floating-point vector UI element.
-        \param[in] label The name of the widget.
-        \param[in] var A reference to a float4 that will be updated directly when the widget state changes.
-        \param[in] minVal Optional. The minimum allowed value for each element of the vector.
-        \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
-        \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
-
-        \return true if the value changed, otherwise false
+            \param[in] label The name of the widget.
+            \param[in] var A reference to a float4 that will be updated directly when the widget state changes.
+            \param[in] minVal Optional. The minimum allowed value for each element of the vector.
+            \param[in] maxVal Optional. The maximum allowed value for each element of the vector.
+            \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
+            \return true if the value changed, otherwise false
         */
         bool addFloat4Var(const char label[], glm::vec4& var, float minVal = -1, float maxVal = 1, bool sameLine = false);
 
@@ -166,7 +164,6 @@ namespace Falcor
             \param[in] label The name of the checkbox.
             \param[in] var A reference to a boolean that will be updated directly when the checkbox state changes.
             \param[in] sameLine Optional. If set to true, the widget will appear on the same line as the previous widget
-
             \return true if the value changed, otherwise false
         */
         bool addCheckBox(const char label[], bool& pVar, bool sameLine = false);
@@ -187,7 +184,7 @@ namespace Falcor
         */
         bool addRgbaColor(const char label[], glm::vec4& var, bool sameLine = false);
 
-        /** Adds an integer UI element.
+        /** Adds an integer UI widget.
             \param[in] label The name of the widget.
             \param[in] var A reference to an integer that will be updated directly when the widget state changes.
             \param[in] minVal Optional. The minimum allowed value for the variable.
@@ -228,32 +225,32 @@ namespace Falcor
         bool addTextBox(const char label[], char buf[], size_t bufSize, uint32_t lineCount = 1);
 
         /** Adds a text box.
-        \param[in] label The name of the variable.
-        \param[in] text A string with the initialize text. The string will be updated if a text is entered.
-        \param[in] lineCount Number of lines in the text-box. If larger then 1 will create a multi-line box
-        \return true if the value changed, otherwise false
+            \param[in] label The name of the variable.
+            \param[in] text A string with the initialize text. The string will be updated if a text is entered.
+            \param[in] lineCount Number of lines in the text-box. If larger then 1 will create a multi-line box
+            \return true if the value changed, otherwise false
         */
         bool addTextBox(const char label[], std::string& text, uint32_t lineCount = 1);
 
         using GraphCallback = float(*)(void*, int32_t index);
 
         /** Adds a graph based on a function
-        \param[in] label The name of the widget.
-        \param[in] func A function pointer to calculate the values in the graph
-        \param[in] pUserData A user-data pointer to pass to the callback function
-        \param[in] sampleCount Number of sample-points in the graph
-        \param[in] sampleOffset Optional. Determines the value for the center of the x-axis
-        \param[in] yMin Optional. The minimum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
-        \param[in] yMax Optional. The maximum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
-        \param[in] width Optional. The width of the graph widget. 0 means auto-detect (fits the widget to the GUI width)
-        \param[in] height Optional. The height of the graph widget. 0 means auto-detect (no idea what's the logic. Too short.)
+            \param[in] label The name of the widget.
+            \param[in] func A function pointer to calculate the values in the graph
+            \param[in] pUserData A user-data pointer to pass to the callback function
+            \param[in] sampleCount Number of sample-points in the graph
+            \param[in] sampleOffset Optional. Determines the value for the center of the x-axis
+            \param[in] yMin Optional. The minimum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
+            \param[in] yMax Optional. The maximum value of the y-axis. Use FLT_MAX to auto-detect the range based on the function and the provided x-range
+            \param[in] width Optional. The width of the graph widget. 0 means auto-detect (fits the widget to the GUI width)
+            \param[in] height Optional. The height of the graph widget. 0 means auto-detect (no idea what's the logic. Too short.)
         */
         void addGraph(const char label[], GraphCallback func, void* pUserData, uint32_t sampleCount, int32_t sampleOffset, float yMin = FLT_MAX, float yMax = FLT_MAX, uint32_t width = 0, uint32_t height = 100);
 
         /** Adds a direction widget
-        \param[in] label The name of the widget.
-        \param[in] direction A reference for the direction variable
-        \return true if the value changed, otherwise false
+            \param[in] label The name of the widget.
+            \param[in] direction A reference for the direction variable
+            \return true if the value changed, otherwise false
         */
         bool addDirectionWidget(const char label[], glm::vec3& direction);
 
@@ -264,7 +261,11 @@ namespace Falcor
         /** Create a new window on the stack
         */
         void pushWindow(const char label[], uint32_t width = 0, uint32_t height = 0, uint32_t x = 0, uint32_t y = 0, bool showTitleBar = true);
+
+        /** End a window block
+        */
         void popWindow();
+
     protected:
         bool keyboardCallback(const KeyboardEvent& keyEvent);
         bool mouseCallback(const MouseEvent& mouseEvent);
