@@ -25,7 +25,7 @@ gDefaultFrameTimeMargin = 0.05
 #seconds
 gDefaultLoadTimeMargin = 10
 #seconds
-gDefaultHangTimeDuration = 60 * 5
+gDefaultHangTimeDuration = 60 * 4
 
 #stores data for all tests in a particular solution
 class TestSolution(object):
