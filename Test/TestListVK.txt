@@ -1,4 +1,4 @@
 [
-../Falcor.sln {DebugVK ..\Bin\x64\Release\}
+../Falcor.sln {DebugVK ..\Bin\x64\Debug\}
 NormalMapFiltering {-test -changeMode 100 200 300 -ssframes 50 150 250 350 -shutdown 400} {debugvk}
 ]
