@@ -41,6 +41,8 @@ namespace Falcor
 
     class GpuTimer;
 
+    /** Basic wrapper to calculate and store a string's hash value.
+    */
     struct HashedString
     {
         static std::hash<std::string> hashFunc;
@@ -61,12 +63,12 @@ namespace Falcor
     public:
 
 #if _PROFILING_LOG == 1
-		static void flushLog();
+        static void flushLog();
 #endif
 
         struct EventData
         {
-			virtual ~EventData() {}
+            virtual ~EventData() {}
             std::string name;
             struct FrameData
             {
@@ -79,63 +81,67 @@ namespace Falcor
             CpuTimer::TimePoint cpuStart;
             CpuTimer::TimePoint cpuEnd;
             float cpuTotal = 0;
-			float gpuTotal = 0;
+            float gpuTotal = 0;
             uint32_t level;
 #if _PROFILING_LOG == 1
-			int stepNr = 0;
-			int filesWritten = 0;
-			float cpuMs[_PROFILING_LOG_BATCH_SIZE];
-			float gpuMs[_PROFILING_LOG_BATCH_SIZE];
+            int stepNr = 0;
+            int filesWritten = 0;
+            float cpuMs[_PROFILING_LOG_BATCH_SIZE];
+            float gpuMs[_PROFILING_LOG_BATCH_SIZE];
 #endif
         };
 
         /** Start profiling a new event and update the events hierarchies.
-            \param[in] Name The event name.
+            \param[in] name The event name.
         */
-		inline static void startEvent(const HashedString& name) { startEvent(name, getEvent(name)); }
+        inline static void startEvent(const HashedString& name) { startEvent(name, getEvent(name)); }
 
-		/** Start profiling a new event and update the events hierarchies.
-            \param[in] Name The event name.
-			\param[in] Event The event if previously looked up.
-			\note This version supports dropping the event-lookup if the event is already available.
+        /** Start profiling a new event and update the events hierarchies.
+            \param[in] name The event name.
+            \param[in] event The event if previously looked up.
+            \note This version supports dropping the event-lookup if the event is already available.
         */
-		static void startEvent(const HashedString& name, EventData *pEvent);
+        static void startEvent(const HashedString& name, EventData *pEvent);
 
-		/** Finish profiling a new event and update the events hierarchies.
-            \param[in] Name The event name.
+        /** Finish profiling a new event and update the events hierarchies.
+            \param[in] name The event name.
         */
-		inline static void endEvent(const HashedString& name)   { endEvent(name, getEvent(name)); }
-		/** Finish profiling a new event and update the events hierarchies.
-            \param[in] Name The event name.
-			\param[in] Event The event if previously looked up.
-			\note This version supports dropping the event-lookup if the event is already available.
-		*/
+        inline static void endEvent(const HashedString& name) { endEvent(name, getEvent(name)); }
+
+        /** Finish profiling a new event and update the events hierarchies.
+            \param[in] name The event name.
+            \param[in] event The event if previously looked up.
+            \note This version supports dropping the event-lookup if the event is already available.
+        */
         static void endEvent(const HashedString& name, EventData *pEvent);
 
         /** Finish profiling for the entire frame.
             Due to the double-buffering nature of the profiler, the results returned are for the previous frame.
-            \param[out] ProfileResults A string containing the the profiling results.
+            \param[out] profileResults A string containing the the profiling results.
         */
         static void endFrame(std::string& profileResults);
 
-		/** Create a new event and register and initialize it using \ref initNewEvent.
-		*/
-		static EventData* createNewEvent(const HashedString& name);
-		
-		/** Initialize a previously generated event.
-		    Used to do the default initialization without creating the actual event instance, to support derived event types. See \ref Cuda::Profiler::EventData.
-		*/
-        static void       initNewEvent(EventData *pEvent, const HashedString& name);
+        /** Create a new event and register and initialize it using \ref initNewEvent.
+            \param[in] name The event name.
+        */
+        static EventData* createNewEvent(const HashedString& name);
+        
+        /** Initialize a previously generated event.
+            Used to do the default initialization without creating the actual event instance, to support derived event types. See \ref Cuda::Profiler::EventData.
+            \param[out] pEvent Event to initialize
+            \param[in] name New event name
+        */
+        static void initNewEvent(EventData *pEvent, const HashedString& name);
 
-		/** Get the event, or create a new one if the event does not yet exist.
-		    This is a public interface to facilitate more complicated construction of event names and finegrained control over the profiled region.
-		*/
+        /** Get the event, or create a new one if the event does not yet exist.
+            This is a public interface to facilitate more complicated construction of event names and finegrained control over the profiled region.
+        */
         static EventData* getEvent(const HashedString& name);
 
-		/** Returns the event or \c nullptr if the event is not known.
-		    Can be used as a predicate.
-		*/
-		static EventData* isEventRegistered(const HashedString& name);
+        /** Returns the event or \c nullptr if the event is not known.
+            Can be used as a predicate.
+        */
+        static EventData* isEventRegistered(const HashedString& name);
 
         /** Clears all the events. 
             Useful if you want to start profiling a different technique with different events.

@@ -35,12 +35,12 @@ namespace Falcor
     */
     struct InputModifiers
     {
-        bool isCtrlDown  = false;    ///< Any of the control keys are pressed
-        bool isShiftDown = false;    ///< Any of the shift keys are pressed
-        bool isAltDown   = false;    ///< Any of the alt keys are pressed
+        bool isCtrlDown  = false;   ///< Any of the control keys are pressed
+        bool isShiftDown = false;   ///< Any of the shift keys are pressed
+        bool isAltDown   = false;   ///< Any of the alt keys are pressed
     };
 
-    /** This class abstracts mouse messages
+    /** Abstracts mouse messages
     */
     struct MouseEvent
     {
@@ -58,9 +58,9 @@ namespace Falcor
             Wheel                   ///< Mouse wheel was scrolled
         };
 
-        Type type;                  ///< Event Type;
-        glm::vec2 pos;	         ///< Normalized coordinates x,y in range [0, 1]. (0,0) is the top-left corner of the window.
-        glm::vec2 wheelDelta;    ///< If the current event is CMouseEvent#Type#Wheel, the change in wheel scroll. Otherwise zero.
+        Type type;              ///< Event Type.
+        glm::vec2 pos;          ///< Normalized coordinates x,y in range [0, 1]. (0,0) is the top-left corner of the window.
+        glm::vec2 wheelDelta;   ///< If the current event is CMouseEvent#Type#Wheel, the change in wheel scroll. Otherwise zero.
         InputModifiers mods;    ///< Keyboard modifiers. Only valid if the event Type is one the button events
     };
 
@@ -131,7 +131,7 @@ namespace Falcor
             // Special keys
             Escape          ,
             Tab             ,
-            Enter           ,          
+            Enter           ,
             Backspace       ,
             Insert          ,
             Del             ,
@@ -188,9 +188,9 @@ namespace Falcor
             Menu            ,
         };
 
-        Type type; ///< The event Type;
-        Key  key;  ///< The last key that was pressed/released;
-        InputModifiers mods; ///< Keyboard modifiers;
-        char asciiChar; // The matching ASCII char, or zero if the key type doesn't have one
+        Type type;              ///< The event type
+        Key  key;               ///< The last key that was pressed/released
+        InputModifiers mods;    ///< Keyboard modifiers
+        char asciiChar;         ///< The matching ASCII char, or zero if the key type doesn't have one
     };
 }

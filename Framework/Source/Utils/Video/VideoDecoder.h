@@ -42,8 +42,8 @@ struct AVRational;
 namespace Falcor
 {        
     /** Simple video decoder for high-framerate and high-resolution
-    playback of rendered videos. Currently decodes the first N frames
-    as textures before playing.
+        playback of rendered videos. Currently decodes the first N frames
+        as textures before playing.
     */
     class VideoDecoder
     {
@@ -54,9 +54,10 @@ namespace Falcor
         typedef std::vector<Texture::SharedPtr> TexturePool;
         typedef std::shared_ptr<TexturePool> TexturePoolPtr;
 
-        /** create a new videoplay object
+        /** Create a new VideoDecoder object
             \param[in] filename Input video file (with path)
             \param[in] bufferFrames The maximum number of input frames to buffer as Texture objects. Default is 300.
+            \param[in] async Whether load operation should happen asynchronously
         */
         static UniquePtr create(const std::string& filename, uint32_t bufferedFrames = 300, bool async = false);
         ~VideoDecoder();
@@ -70,6 +71,7 @@ namespace Falcor
         /** Return duration of video loaded (in seconds).
             This uses the actual number of frames. Only makes sense
             for videos shorter than the requested frame count.
+            \return Duration of video loaded in seconds.
         */
         float getDuration();
 
@@ -81,6 +83,11 @@ namespace Falcor
         */
         void setTexturePool(TexturePoolPtr& texturePool);
 
+        /** Opens a file
+            \param[in] filename Input video file (with path)
+            \param[in] bufferFrames The maximum number of input frames to buffer as Texture objects. Default is 300.
+            \param[in] async Whether load operation should happen asynchronously
+        */
         bool load(const std::string& filename, uint32_t bufferedFrames, bool async);
 
     private:

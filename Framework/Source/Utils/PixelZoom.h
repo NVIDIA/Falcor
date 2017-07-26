@@ -31,31 +31,31 @@
 
 namespace Falcor
 {
+    /** Magnifies a region of the screen to assist with inspecting details
+    */
     class PixelZoom
     {
     public:
         using SharedPtr = std::shared_ptr<PixelZoom>;
 
         /** Create a new object
+            \param[in] pBackBuffer Pointer to the back buffer FBO
         */
         static SharedPtr PixelZoom::create(const Fbo* pBackbuffer);
 
-        /**
-            Does zoom operation if mShouldZoom is true (if ctrl+alt pressed this frame)
-            \param pCtx
-            \param backbuffer a ptr to the swap chain fbo
+        /** Does zoom operation if mShouldZoom is true (if ctrl+alt pressed this frame)
+            \param pCtx Pointer to the render context
+            \param backbuffer Pointer to the swap chain FBO
         */
         void render(RenderContext* pCtx, Fbo* backBuffer);
 
-        /** 
-            Stores data about mouse needed for zooming
+        /** Stores data about mouse needed for zooming
             \param me the mouse event
         */
         bool onMouseEvent(const MouseEvent& me);
 
-        /**
-            Checks if it should zoom
-            \param keyboard event
+        /** Checks if it should zoom
+            \param ke Keyboard event
         */
         bool onKeyboardEvent(const KeyboardEvent& ke);
 

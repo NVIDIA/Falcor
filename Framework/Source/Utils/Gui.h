@@ -108,7 +108,9 @@ namespace Falcor
         bool addRadioButtons(const RadioButtonGroup& buttons, int32_t& activeID);
 
         /** Begin a collapsible group block
-            returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
+            \param[in] label Display name of the group
+            \param[in] beginExpanded Whether group should be expanded initially
+            \return Returns true if the group is expanded, otherwise false. Use it to avoid making unnecessary calls
         */
         bool beginGroup(const char label[], bool beginExpanded = false);
         bool beginGroup(const std::string& label, bool beginExpanded = false) { return beginGroup(label.c_str(), beginExpanded); }
