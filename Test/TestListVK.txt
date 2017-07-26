@@ -1,6 +1,5 @@
 [
 ../Falcor.sln {ReleaseVK ..\Bin\x64\Release\}
-ShaderBuffers {-test -ssframes 50 -shutdown 100} {releasevk}
 ComputeShader {
      -test -ssframes 50 -shutdown 100 -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg, 
      -test -ssframes 50 -shutdown 100 -pixelate -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg,
@@ -32,8 +31,7 @@ NormalMapFiltering {-test -changeMode 100 200 300 -ssframes 50 150 250 350 -shut
 
 
 [
-../Falcor.sln {DebugVK ..\Bin\x64\Release\}
-ShaderBuffers {-test -ssframes 50 -shutdown 100} {debugvk}
+../Falcor.sln {DebugVK ..\Bin\x64\Debug\}
 ComputeShader {
      -test -ssframes 50 -shutdown 100 -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg, 
      -test -ssframes 50 -shutdown 100 -pixelate -loadimage \\netapp-wa02\\public\\Falcor\\TestMedia\\StockImage.jpg,
