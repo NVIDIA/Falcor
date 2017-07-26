@@ -91,7 +91,7 @@ namespace Falcor
             }
         }
 
-        if (clearDepth | clearStencil)
+        if ((clearDepth | clearStencil) && pFbo->getDepthStencilTexture() != nullptr)
         {
             clearDsv(pFbo->getDepthStencilView().get(), depth, stencil, clearDepth, clearStencil);
         }
