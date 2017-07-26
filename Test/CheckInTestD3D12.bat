@@ -1,1 +1,1 @@
-call python.exe RunAllTests.py -ss -ref \\netapp-wa02\public\Falcor\NVReferenceResultsHub -tests TestListSamplesD3D12.txt
+call python.exe RunAllTests.py -ss -ref \\netapp-wa02\public\Falcor\AMDReferenceResultsHub -tests TestListSamplesD3D12.txt

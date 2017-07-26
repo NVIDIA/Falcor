@@ -16,7 +16,7 @@ import TestingUtil as testingUtil
 gBuildBatchFile = 'BuildFalcor.ps1 '
 gTestListFile = 'TestListD3D12.txt'
 gResultsDirBase = 'TestResults'
-gReferenceDir = 'NVReferenceResults'
+gReferenceDir = 'AMDReferenceResults'
 gPowerShell = "C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 #default values
@@ -25,7 +25,7 @@ gDefaultFrameTimeMargin = 0.05
 #seconds
 gDefaultLoadTimeMargin = 10
 #seconds
-gDefaultHangTimeDuration = 60 * 5
+gDefaultHangTimeDuration = 60 * 60 * 4
 
 #stores data for all tests in a particular solution
 class TestSolution(object):
