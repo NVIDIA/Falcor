@@ -1,4 +1,4 @@
 [
-../Falcor.sln {ReleaseVK ..\Bin\x64\Release\}
-ShaderBuffers {-test -ssframes 50 -shutdown 100} {releasevk}
+../Falcor.sln {DebugVK ..\Bin\x64\Release\}
+NormalMapFiltering {-test -changeMode 100 200 300 -ssframes 50 150 250 350 -shutdown 400} {debugvk}
 ]
