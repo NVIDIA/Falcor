@@ -16,7 +16,7 @@ import TestingUtil as testingUtil
 gBuildBatchFile = 'BuildFalcor.ps1 '
 gTestListFile = 'TestListD3D12.txt'
 gResultsDirBase = 'TestResults'
-gReferenceDir = 'NVReferenceResults'
+gReferenceDir = 'IntelReferenceResults'
 gPowerShell = "C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 #default values
